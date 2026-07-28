@@ -86,8 +86,14 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 uv run python train.py \
   --data-dir ../data/dataset \
   --output-dir model \
   --device auto \
+  --allow-download \
   --seed 42
 ```
+
+`--allow-download` is required on the first training run so Transformers can
+fetch `openai/whisper-tiny`. Once that model is cached, omit the flag for a
+fully offline, cache-only run. Inference from the included `model/` checkpoint
+is self-contained and does not need this download.
 
 The completed, self-contained inference artifact is written to `model/`.
 Intermediate runs and checkpoints are disposable and are excluded by the

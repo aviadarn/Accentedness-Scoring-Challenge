@@ -28,7 +28,10 @@ difference is a subtler realization of that phone. For example, a label-0 `/k/`
 in `utt_1283` scored `99.71`, while a clearly degraded label-0 `/ʌ/` in
 `utt_2184` scored `1.72`.
 
-Full phone-level reports are saved in `sniff_reports/`:
+Full phone-level reports are saved locally in `sniff_reports/`. That directory
+is intentionally git-ignored because the reports contain row-level dataset
+text, labels, and local audio paths; regenerate them from the evaluator's copy
+of the dataset with the documented `sniff_test.py` command.
 
 - `utt_2163.json`
 - `utt_1864.json`
