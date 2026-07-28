@@ -11,6 +11,7 @@ import pytest
 
 from accent_score.gopt_kaldi_batch import (
     BATCH_INDEX_ROW_KIND,
+    DEFAULT_EXTRACTION_SCRIPT,
     KaldiBatchError,
     _alignment_evidence,
     audit_kaldi_batch,
@@ -24,6 +25,13 @@ from accent_score.gopt_kaldi_prep import (
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_default_extraction_script_uses_gopt_tool_directory() -> None:
+    assert DEFAULT_EXTRACTION_SCRIPT == (
+        REPOSITORY_ROOT / "submission/tools/gopt/gopt_kaldi_extract.sh"
+    )
+    assert DEFAULT_EXTRACTION_SCRIPT.is_file()
 
 
 def _canonical(value: object) -> bytes:

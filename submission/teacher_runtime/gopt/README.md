@@ -128,8 +128,8 @@ guessing, runs the current Kaldi SpeechOcean762 recipe against the public m13
 artifacts in a digest-pinned Linux image, and converts the keyed 85-value Kaldi
 vectors into attested 84-D inputs. The first train audit successfully compiled
 and aligned 247 utterances / 5,894 phones. See
-[`../../GOPT_AUDIT.md`](../../GOPT_AUDIT.md) for the commands and
-[`../../GOPT_PILOT_RESULTS.md`](../../GOPT_PILOT_RESULTS.md) for the measured
+[`../../docs/GOPT_AUDIT.md`](../../docs/GOPT_AUDIT.md) for the commands and
+[`../../docs/GOPT_PILOT_RESULTS.md`](../../docs/GOPT_PILOT_RESULTS.md) for the measured
 limitations.
 
 This package remains feature-only by design: it does not invoke Docker, trust a

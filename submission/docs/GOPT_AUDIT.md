@@ -9,7 +9,7 @@ item has a saved rating.
 ## Scoring runtime
 
 Use the isolated
-[`teacher_runtime/gopt`](teacher_runtime/gopt/README.md) project to download and
+[`teacher_runtime/gopt`](../teacher_runtime/gopt/README.md) project to download and
 hash-check the official checkpoint and score one sequence of 84-D Kaldi GOP
 features. Its diagnostics preserve the unbounded raw model output and identify
 the projected `gopt_scores` as `clip_0_2_v1`. The runtime deliberately does not
@@ -27,7 +27,7 @@ word boundaries, stress, and complete phone sequence can be established without
 guessing:
 
 ```bash
-uv run --project submission python submission/gopt_kaldi_prep.py \
+uv run --project submission python submission/tools/gopt/gopt_kaldi_prep.py \
   --data-dir data/dataset \
   --align-lexicon data/gopt_models/librispeech-m13/runtime/data/lang_test_tgsmall/phones/align_lexicon.txt \
   --output-dir data/gopt_audits/kaldi-train-exact-prepared \
@@ -45,7 +45,7 @@ features with the immutable image used by the pilot:
 docker run --rm --platform linux/amd64 \
   -v "$PWD:/workspace" -w /workspace \
   kaldiasr/kaldi@sha256:335fa60ff1b70d5145dfea83bb6e4cd7b9b8e40bfbf11b8688cd04b358f952f2 \
-  bash /workspace/submission/gopt_kaldi_extract.sh \
+  bash /workspace/submission/tools/gopt/gopt_kaldi_extract.sh \
   /workspace/data/gopt_audits/kaldi-train-exact-prepared \
   /workspace/data/gopt_models/librispeech-m13/runtime/exp/chain_cleaned/tdnn_1d_sp \
   /workspace/data/gopt_models/librispeech-m13/runtime/exp/nnet3_cleaned/extractor \
@@ -58,10 +58,10 @@ features, bind them to the preparation and extraction artifacts, and verify the
 sealed bundle:
 
 ```bash
-uv run --project submission python submission/gopt_kaldi_attest.py batch-convert \
+uv run --project submission python submission/tools/gopt/gopt_kaldi_attest.py batch-convert \
   --output-dir data/gopt_audits/kaldi-train-exact-converted
 
-uv run --project submission python submission/gopt_kaldi_attest.py batch-verify \
+uv run --project submission python submission/tools/gopt/gopt_kaldi_attest.py batch-verify \
   --output-dir data/gopt_audits/kaldi-train-exact-converted
 ```
 
@@ -74,7 +74,7 @@ uv run --project submission/teacher_runtime/gopt gopt-score-batch \
   --bundle data/gopt_audits/kaldi-train-exact-converted \
   --output data/gopt_audits/kaldi-train-exact-diagnostics
 
-uv run --project submission python submission/gopt_audit.py sidecar-build \
+uv run --project submission python submission/tools/gopt/gopt_audit.py sidecar-build \
   --data-dir data/dataset \
   --checkpoint data/gopt_models/official-gopt-librispeech/best_audio_model.pth \
   --diagnostics data/gopt_audits/kaldi-train-exact-diagnostics \
@@ -95,14 +95,14 @@ manifest stem as `--utterance-id`, placing the resulting JSON files in one
 diagnostic directory. Each diagnostic records the resolved `.npy` feature
 path, whole-file SHA-256, and selected batch index in addition to raw/projected
 scores and the full inference contract. Then bridge those diagnostics from the
-main `submission/` environment:
+repository root with the main `submission/` environment:
 
 ```bash
-uv run python gopt_audit.py sidecar-build \
-  --data-dir ../data/dataset \
-  --checkpoint teacher_runtime/gopt/artifacts/best_audio_model.pth \
-  --diagnostics ../data/gopt_audits/runtime-diagnostics \
-  --output ../data/gopt_audits/train-scores.jsonl
+uv run --project submission python submission/tools/gopt/gopt_audit.py sidecar-build \
+  --data-dir data/dataset \
+  --checkpoint submission/teacher_runtime/gopt/artifacts/best_audio_model.pth \
+  --diagnostics data/gopt_audits/runtime-diagnostics \
+  --output data/gopt_audits/train-scores.jsonl
 ```
 
 `--diagnostics` may instead name a JSONL file containing one compact runtime
@@ -194,13 +194,13 @@ relabeling authority.
 
 ## Prepare and review
 
-From `submission/`, create a new packet directory:
+From the repository root, create a new packet directory:
 
 ```bash
-uv run python gopt_audit.py review-prepare \
-  --data-dir ../data/dataset \
-  --scores ../data/gopt_audits/train-scores.jsonl \
-  --output-dir ../data/label_reviews/gopt-disagreements-seed42 \
+uv run --project submission python submission/tools/gopt/gopt_audit.py review-prepare \
+  --data-dir data/dataset \
+  --scores data/gopt_audits/train-scores.jsonl \
+  --output-dir data/label_reviews/gopt-disagreements-seed42 \
   --items-per-label 10 \
   --minimum-disagreement 0.75 \
   --seed 42
@@ -215,8 +215,8 @@ only to obtain CTC clip boundaries.
 Open the existing local blinded reviewer:
 
 ```bash
-uv run python gopt_audit.py review-serve \
-  --review-dir ../data/label_reviews/gopt-disagreements-seed42
+uv run --project submission python submission/tools/gopt/gopt_audit.py review-serve \
+  --review-dir data/label_reviews/gopt-disagreements-seed42
 ```
 
 The server binds only to `127.0.0.1`, disables Gradio sharing, and writes human
@@ -224,11 +224,11 @@ ratings to the packet's separate `human_ratings.jsonl`. Check progress or
 unseal the completed comparison with:
 
 ```bash
-uv run python gopt_audit.py review-status \
-  --review-dir ../data/label_reviews/gopt-disagreements-seed42
+uv run --project submission python submission/tools/gopt/gopt_audit.py review-status \
+  --review-dir data/label_reviews/gopt-disagreements-seed42
 
-uv run python gopt_audit.py review-reveal \
-  --review-dir ../data/label_reviews/gopt-disagreements-seed42
+uv run --project submission python submission/tools/gopt/gopt_audit.py review-reveal \
+  --review-dir data/label_reviews/gopt-disagreements-seed42
 ```
 
 Status and reveal use `packet_ratings_complete` only for completion of the
@@ -243,7 +243,7 @@ For the completed exact pilot, only four distinct label-2 utterances meet a
 0.5 minimum disagreement, so the largest balanced packet contains 12 clips:
 
 ```bash
-uv run --project submission python submission/gopt_audit.py review-prepare \
+uv run --project submission python submission/tools/gopt/gopt_audit.py review-prepare \
   --data-dir data/dataset \
   --scores data/gopt_audits/gopt-train-exact-scores.jsonl \
   --output-dir data/label_reviews/gopt-disagreements-exact-seed42 \
@@ -251,7 +251,7 @@ uv run --project submission python submission/gopt_audit.py review-prepare \
   --minimum-disagreement 0.5 \
   --seed 42
 
-uv run --project submission python submission/gopt_audit.py review-serve \
+uv run --project submission python submission/tools/gopt/gopt_audit.py review-serve \
   --review-dir data/label_reviews/gopt-disagreements-exact-seed42 \
   --port 7862
 ```

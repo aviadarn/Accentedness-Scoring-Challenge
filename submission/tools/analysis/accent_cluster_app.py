@@ -13,7 +13,7 @@ import gradio as gr
 import pandas as pd
 
 
-REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_CLUSTER_DIR = REPOSITORY_ROOT / "data/accent_clusters"
 DEFAULT_DATA_DIR = REPOSITORY_ROOT / "data/dataset"
 

@@ -9,7 +9,9 @@ import wave
 import pytest
 
 
-APP_PATH = Path(__file__).parents[1] / "accent_cluster_app.py"
+APP_PATH = (
+    Path(__file__).parents[1] / "tools" / "analysis" / "accent_cluster_app.py"
+)
 SPEC = importlib.util.spec_from_file_location("accent_cluster_app_tested", APP_PATH)
 assert SPEC is not None and SPEC.loader is not None
 APP = importlib.util.module_from_spec(SPEC)
@@ -19,6 +21,13 @@ SPEC.loader.exec_module(APP)
 AccentClusterExplorerError = APP.AccentClusterExplorerError
 load_explorer_data = APP.load_explorer_data
 pattern_name = APP.pattern_name
+
+
+def test_default_paths_still_resolve_from_nested_launcher() -> None:
+    repository_root = Path(__file__).resolve().parents[2]
+    assert APP.REPOSITORY_ROOT == repository_root
+    assert APP.DEFAULT_CLUSTER_DIR == repository_root / "data/accent_clusters"
+    assert APP.DEFAULT_DATA_DIR == repository_root / "data/dataset"
 
 
 def _wav(path: Path) -> None:

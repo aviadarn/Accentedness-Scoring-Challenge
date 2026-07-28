@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import argparse
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import partial
 import logging
 from pathlib import Path
+
+from _bootstrap import REPOSITORY_ROOT, bootstrap_submission_imports
+
+bootstrap_submission_imports()
 
 import gradio as gr
 import numpy as np
@@ -41,7 +46,6 @@ PHONEMES: tuple[str, ...] = (
     "ð",
     "ɝ",
 )
-REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIRECTORY = REPOSITORY_ROOT / "data" / "sniff_test"
 
 
@@ -240,10 +244,29 @@ def build_app() -> gr.Blocks:
 app = build_app()
 
 
-def main() -> None:
+def _port(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError("port must be an integer") from error
+    if not 1 <= parsed <= 65_535:
+        raise argparse.ArgumentTypeError("port must be between 1 and 65535")
+    return parsed
+
+
+def build_argument_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Record and compare a controlled pair of accent renditions."
+    )
+    parser.add_argument("--port", type=_port, default=7865, help="local Gradio port")
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    arguments = build_argument_parser().parse_args(argv)
     app.launch(
         server_name="127.0.0.1",
-        server_port=7865,
+        server_port=arguments.port,
         share=False,
         max_file_size=MAX_UPLOAD_SIZE,
         show_error=False,
@@ -261,6 +284,7 @@ __all__ = [
     "PreparedRecording",
     "SENTENCE",
     "app",
+    "build_argument_parser",
     "build_app",
     "prepare_recording",
     "save_and_compare",

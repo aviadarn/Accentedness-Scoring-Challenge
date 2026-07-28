@@ -22,6 +22,10 @@ build/
 dist/
 *.egg-info/
 
+# Local experiment outputs. Keep only the convention document tracked.
+/runs/*
+!/runs/README.md
+
 # Disposable training outputs. The final submission/model/ artifact is
 # intentionally not ignored and should remain part of the submission.
 submission/.cache/

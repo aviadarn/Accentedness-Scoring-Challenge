@@ -5,6 +5,10 @@ from __future__ import annotations
 
 import os
 
+from _bootstrap import bootstrap_submission_imports
+
+bootstrap_submission_imports()
+
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 from accent_score.sniff import main

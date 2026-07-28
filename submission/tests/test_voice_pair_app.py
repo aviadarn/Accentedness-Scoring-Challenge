@@ -1,13 +1,26 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 
 import numpy as np
 import pytest
 import soundfile as sf
 
 from accent_score.audio import SAMPLE_RATE
-from voice_pair_app import PHONEMES, PairInputError, prepare_recording, save_and_compare
+
+AUDIT_TOOLS = Path(__file__).resolve().parents[1] / "tools" / "audits"
+if str(AUDIT_TOOLS) not in sys.path:
+    sys.path.insert(0, str(AUDIT_TOOLS))
+
+from voice_pair_app import (
+    OUTPUT_DIRECTORY,
+    PHONEMES,
+    PairInputError,
+    build_argument_parser,
+    prepare_recording,
+    save_and_compare,
+)
 
 
 def _write_audio(path: Path, *, seconds: float = 1.0, sample_rate: int = 8_000) -> None:
@@ -15,6 +28,11 @@ def _write_audio(path: Path, *, seconds: float = 1.0, sample_rate: int = 8_000) 
     mono = 0.15 * np.sin(2.0 * np.pi * 220.0 * time)
     stereo = np.column_stack([mono, mono * 0.8])
     sf.write(path, stereo, sample_rate)
+
+
+def test_default_output_directory_remains_at_repository_data_root() -> None:
+    repository_root = Path(__file__).resolve().parents[2]
+    assert OUTPUT_DIRECTORY == repository_root / "data" / "sniff_test"
 
 
 def test_prepare_recording_writes_mono_pcm16_at_16khz(tmp_path: Path) -> None:
@@ -73,3 +91,11 @@ def test_save_pair_requires_both_recordings(tmp_path: Path) -> None:
             output_directory=tmp_path / "output",
             scorer=lambda _path, _phones: [50.0] * len(PHONEMES),
         )
+
+
+def test_cli_accepts_only_valid_local_ports() -> None:
+    parser = build_argument_parser()
+
+    assert parser.parse_args(["--port", "8765"]).port == 8765
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--port", "70000"])

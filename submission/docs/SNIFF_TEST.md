@@ -88,7 +88,7 @@ are rejected.
 For guided local collection and an immediate comparison, run:
 
 ```bash
-uv run python voice_pair_app.py
+uv run python tools/audits/voice_pair_app.py
 ```
 
 The helper listens only on `127.0.0.1` and saves the normalized pair to the
@@ -97,12 +97,12 @@ filenames above.
 Run from `submission/`:
 
 ```bash
-uv run python sniff_test.py \
+uv run python tools/audits/sniff_test.py \
   --audio ../data/sniff_test/american.wav \
   --phones "w i j ɝ b oʊ θ tʃ ɪ l d ɹ ʌ n t ʌ ɡ ɛ ð ɝ" \
   --output sniff_reports/american.json
 
-uv run python sniff_test.py \
+uv run python tools/audits/sniff_test.py \
   --audio ../data/sniff_test/non_native.wav \
   --phones "w i j ɝ b oʊ θ tʃ ɪ l d ɹ ʌ n t ʌ ɡ ɛ ð ɝ" \
   --output sniff_reports/non_native.json

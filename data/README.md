@@ -5,6 +5,11 @@ Accentedness Scoring challenge. It documents the files as they exist in this
 repository; task requirements live in the
 [challenge brief](phone-scoring-ml-challenge.md).
 
+This directory is for challenge inputs and local derived artifacts. Aggregate
+research conclusions and production decisions are organized in the
+[experiment index](../experiments/README.md); the final runnable system lives
+in [`submission/`](../submission/README.md).
+
 > Inventory last verified: 2026-07-27. Statistics labeled **observed** were
 > computed from this local snapshot. Collection details not stated in the
 > challenge brief are treated as unknown.

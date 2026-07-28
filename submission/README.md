@@ -14,6 +14,30 @@ This package trains and runs a model that assigns a continuous `0`–`100`
 American-English accentedness score to every expected phoneme in an utterance.
 Run all commands below from the repository root unless noted otherwise.
 
+This directory is the evaluator-facing deliverable. Research trials, rejected
+ideas, data-quality audits, and their production decisions are catalogued
+separately in the [experiment index](../experiments/README.md). The final model
+and public API stay here so the challenge's required paths remain stable.
+
+## Directory map
+
+```text
+submission/
+├── train.py, inference.py, demo_app.py  # Required public entry points
+├── model/                               # Selected deployable checkpoint
+├── accent_score/                        # Reusable implementation package
+├── tools/
+│   ├── analysis/                        # Model and clustering experiments
+│   ├── audits/                          # Sniff and label-quality checks
+│   └── gopt/                            # External-teacher pipeline
+├── docs/                                # Supporting research reports
+├── judge_runtime/, teacher_runtime/     # Isolated model runtimes
+├── models/                              # Rejected comparison metadata
+└── tests/                               # Automated verification
+```
+
+See [`tools/README.md`](tools/README.md) before running an optional utility.
+
 ## Interactive demo
 
 The Gradio demo accepts audio from a microphone or file upload, generates a
@@ -144,7 +168,7 @@ score by expectation. To test stronger token rebalancing and continuous losses
 without changing the checkpoint format, run the nested four-arm experiment:
 
 ```bash
-PYTORCH_ENABLE_MPS_FALLBACK=1 HF_HUB_OFFLINE=1 uv run python objective_experiment.py \
+PYTORCH_ENABLE_MPS_FALLBACK=1 HF_HUB_OFFLINE=1 uv run python tools/analysis/objective_experiment.py \
   --data-dir ../data/dataset \
   --speaker-clusters ../data/speaker_clusters/clusters.json \
   --output-dir runs/objective-comparison-s42 \
@@ -197,7 +221,7 @@ cannot be called speaker-independent. This command derives pseudo-speakers from
 the audio itself and audits both splits:
 
 ```bash
-PYTORCH_ENABLE_MPS_FALLBACK=1 uv run python speaker_analysis.py \
+PYTORCH_ENABLE_MPS_FALLBACK=1 uv run python tools/analysis/speaker_analysis.py \
   --dataset-root ../data/dataset \
   --output-directory ../data/speaker_clusters
 ```
@@ -250,7 +274,7 @@ differ rather than merely strong versus mild accent.
 From `submission/`, build the five artifacts with:
 
 ```bash
-uv run python accent_cluster.py \
+uv run python tools/analysis/accent_cluster.py \
   --dataset-root ../data/dataset \
   --speaker-clusters ../data/speaker_clusters/clusters.json \
   --output-dir ../data/accent_clusters
@@ -267,7 +291,7 @@ variance, which argues against simple prompt or strength clusters.
 Browse the map, phoneme descriptions, evidence status, and audio examples:
 
 ```bash
-uv run python accent_cluster_app.py \
+uv run python tools/analysis/accent_cluster_app.py \
   --cluster-dir ../data/accent_clusters \
   --data-dir ../data/dataset \
   --port 7863
@@ -284,13 +308,13 @@ To independently verify a small sample of the dataset labels, prepare 10 hidden
 examples from each class (30 distinct utterances total):
 
 ```bash
-PYTORCH_ENABLE_MPS_FALLBACK=1 uv run python label_review.py prepare \
+PYTORCH_ENABLE_MPS_FALLBACK=1 uv run python tools/audits/label_review.py prepare \
   --data-dir ../data/dataset \
   --output-dir ../data/label_reviews/native-like-check-seed42 \
   --items-per-label 10 \
   --seed 42
 
-uv run python label_review.py serve \
+uv run python tools/audits/label_review.py serve \
   --review-dir ../data/label_reviews/native-like-check-seed42
 ```
 
@@ -311,12 +335,12 @@ without opening the UI using the `status` and `reveal` subcommands.
 The same blinded reviewer can adjudicate high-confidence disagreements from a
 provenance-stamped GOPT teacher sidecar. The train-only artifact contract,
 preparation commands, validation rules, and sealed comparison report are in
-[`GOPT_AUDIT.md`](GOPT_AUDIT.md). The isolated, hash-pinned official checkpoint
+[`docs/GOPT_AUDIT.md`](docs/GOPT_AUDIT.md). The isolated, hash-pinned official checkpoint
 runtime and its corrected feature/phone contract are documented in
 [`teacher_runtime/gopt/README.md`](teacher_runtime/gopt/README.md). Teacher
 scores are candidate signals only; the workflow never edits either labeled
 manifest. The completed 247-utterance end-to-end pilot and its calibration
-failure are reported in [`GOPT_PILOT_RESULTS.md`](GOPT_PILOT_RESULTS.md); use
+failure are reported in [`docs/GOPT_PILOT_RESULTS.md`](docs/GOPT_PILOT_RESULTS.md); use
 that evidence before treating GOPT as a cleaning signal.
 
 ## Qualitative sniff test
@@ -325,7 +349,7 @@ Inspect one labeled validation utterance and optionally save its phone-level
 report:
 
 ```bash
-uv run python sniff_test.py \
+uv run python tools/audits/sniff_test.py \
   --manifest ../data/dataset/val.jsonl \
   --utterance-id utt_2163 \
   --output sniff_reports/utt_2163.json
@@ -334,12 +358,13 @@ uv run python sniff_test.py \
 For an unlabeled recording, provide its exact expected phone sequence:
 
 ```bash
-uv run python sniff_test.py \
+uv run python tools/audits/sniff_test.py \
   --audio voice.wav \
   --phones "w i j ɝ b oʊ θ tʃ ɪ l d ɹ ʌ n t ʌ ɡ ɛ ð ɝ"
 ```
 
-See `SNIFF_TEST.md` for the held-out findings and controlled own-voice protocol.
+See [`docs/SNIFF_TEST.md`](docs/SNIFF_TEST.md) for the held-out findings and
+controlled own-voice protocol.
 
 ## Local blinded judge audit
 
@@ -375,21 +400,21 @@ start after a missing, stale, or failed preflight. Use a fresh audit directory
 when comparing a different judge model.
 
 ```bash
-uv run --project submission python submission/judge_audit.py prepare \
+uv run --project submission python submission/tools/audits/judge_audit.py prepare \
   --data-dir data/dataset \
   --output-dir "$JUDGE_AUDIT_DIR" \
   --seed 42
 
-uv run --project submission python submission/judge_audit.py preflight \
+uv run --project submission python submission/tools/audits/judge_audit.py preflight \
   --audit-dir "$JUDGE_AUDIT_DIR" \
   --judge-model-path "$JUDGE_MODEL_DIR" \
   --seed 42
 
-uv run --project submission python submission/judge_audit.py run \
+uv run --project submission python submission/tools/audits/judge_audit.py run \
   --audit-dir "$JUDGE_AUDIT_DIR" \
   --judge-model-path "$JUDGE_MODEL_DIR"
 
-uv run --project submission python submission/judge_audit.py validate \
+uv run --project submission python submission/tools/audits/judge_audit.py validate \
   --audit-dir "$JUDGE_AUDIT_DIR"
 ```
 
@@ -400,7 +425,7 @@ tasks for at most 200 disagreements.
 
 ```bash
 PYTORCH_ENABLE_MPS_FALLBACK=1 \
-uv run --project submission python submission/judge_audit.py report \
+uv run --project submission python submission/tools/audits/judge_audit.py report \
   --data-dir data/dataset \
   --audit-dir "$JUDGE_AUDIT_DIR" \
   --model-dir submission/model
@@ -411,12 +436,12 @@ final report incorporates `ratings/rechecks.jsonl`. Both pass 1 and rechecks
 persist accepted rows immediately and are safe to resume after interruption.
 
 ```bash
-uv run --project submission python submission/judge_audit.py recheck-run \
+uv run --project submission python submission/tools/audits/judge_audit.py recheck-run \
   --audit-dir "$JUDGE_AUDIT_DIR" \
   --judge-model-path "$JUDGE_MODEL_DIR"
 
 PYTORCH_ENABLE_MPS_FALLBACK=1 \
-uv run --project submission python submission/judge_audit.py report \
+uv run --project submission python submission/tools/audits/judge_audit.py report \
   --data-dir data/dataset \
   --audit-dir "$JUDGE_AUDIT_DIR" \
   --model-dir submission/model
@@ -429,7 +454,7 @@ the normal `report` command already performs that step.
 Finally, open the local disagreement reviewer:
 
 ```bash
-uv run --project submission python submission/judge_review.py \
+uv run --project submission python submission/tools/audits/judge_review.py \
   --audit-dir "$JUDGE_AUDIT_DIR" \
   --data-root data/dataset
 ```

@@ -86,7 +86,9 @@ EXPECTED_BATCH_UTTERANCES = 247
 EXPECTED_BATCH_PHONES = 5_894
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_EXTRACTION_SCRIPT = _REPOSITORY_ROOT / "submission/gopt_kaldi_extract.sh"
+DEFAULT_EXTRACTION_SCRIPT = (
+    _REPOSITORY_ROOT / "submission/tools/gopt/gopt_kaldi_extract.sh"
+)
 DEFAULT_REFERENCE_EXTRACTOR = (
     _REPOSITORY_ROOT
     / "data/gopt_models/librispeech-m13/runtime/exp/nnet3_cleaned/extractor/final.ie"
