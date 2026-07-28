@@ -83,6 +83,58 @@ def test_ctc_decoding_edit_distance_and_corpus_per() -> None:
         phone_error_rate([(1,)], [])
 
 
+def test_fixed_ctc_retraining_preserves_declared_scheduler_horizon(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = TrainingConfig(
+        tmp_path,
+        tmp_path / "model",
+        ctc_warmup_epochs=2,
+        max_ctc_epochs=12,
+    )
+    recorded_steps: list[int] = []
+
+    class _Optimizer:
+        pass
+
+    class _Scheduler:
+        pass
+
+    def fake_optimizer_scheduler(
+        _groups: object, *, weight_decay: float, total_steps: int
+    ) -> tuple[_Optimizer, _Scheduler]:
+        assert weight_decay == config.weight_decay
+        recorded_steps.append(total_steps)
+        return _Optimizer(), _Scheduler()
+
+    monkeypatch.setattr(training_module, "audio_durations", lambda _records: [1.0])
+    monkeypatch.setattr(
+        training_module,
+        "DurationBatchSampler",
+        lambda *_args, **_kwargs: [object(), object(), object()],
+    )
+    monkeypatch.setattr(training_module, "_set_only_ctc_trainable", lambda *_args: None)
+    monkeypatch.setattr(training_module, "_optimizer_scheduler", fake_optimizer_scheduler)
+    monkeypatch.setattr(training_module, "_train_ctc_epoch", lambda *_args, **_kwargs: 0.0)
+
+    model = SimpleNamespace(
+        ctc_head=SimpleNamespace(parameters=lambda: []),
+        encoder=SimpleNamespace(parameters=lambda: []),
+    )
+    training_module.train_ctc_fixed(
+        model,
+        [_record(0, (0,))],
+        SimpleNamespace(),
+        torch.device("cpu"),
+        config,
+        epochs=9,
+    )
+
+    # Three batches per epoch; warmup and fine-tuning retain their original
+    # 2- and 10-epoch horizons even though training stops after epoch nine.
+    assert recorded_steps == [6, 30]
+
+
 def test_cached_scorer_training_and_prediction_preserve_manifest_order(
     tmp_path: Path,
 ) -> None:

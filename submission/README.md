@@ -128,6 +128,37 @@ than the matched baseline with no significant secondary-metric regression.
 The first seed-42 result and its decision are recorded in
 [`../data/auxiliary_training/report.md`](../data/auxiliary_training/report.md).
 
+### Scorer-objective comparison
+
+The scorer already uses ordinal probabilities and converts them to a continuous
+score by expectation. To test stronger token rebalancing and continuous losses
+without changing the checkpoint format, run the nested four-arm experiment:
+
+```bash
+PYTORCH_ENABLE_MPS_FALLBACK=1 HF_HUB_OFFLINE=1 uv run python objective_experiment.py \
+  --data-dir ../data/dataset \
+  --speaker-clusters ../data/speaker_clusters/clusters.json \
+  --output-dir runs/objective-comparison-s42 \
+  --device auto \
+  --seed 42 \
+  --bootstrap-samples 10000
+```
+
+The runner first excludes the previously inspected auxiliary-experiment split,
+selects among the existing inverse-square-root ordinal objective, full inverse
+weighting, focal ordinal loss, and normalized Huber on an inner prompt split,
+then compares only the baseline and selected candidate once on an outer
+pseudo-speaker-disjoint, label-stratified test. It reports balanced MAE,
+per-class recall and MAE, macro-F1, QWK, rank/linear correlation, calibration,
+and diagnostics for `/ɾ/`, `/z/`, `/ð/`, and `/ɝ/`.
+
+The seed-42 test selected full inverse weighting internally and confirmed a
+`2.0209`-point outer balanced-MAE gain, but it significantly worsened overall
+MAE, label-2 error/recall, QWK, macro-F1, and Spearman correlation. Calibration
+also worsened on its point estimates. The candidate was therefore rejected and
+the production checkpoint was left unchanged. Full results and limitations are in
+[`../data/objective_training/report.md`](../data/objective_training/report.md).
+
 ## Inference
 
 The required public interface is:

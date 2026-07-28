@@ -1,0 +1,217 @@
+{
+  "schema_version": "scorer-objective-experiment-summary-v1",
+  "source_report_sha256": "5d76e53e264c5c5d6b670d0d29db52a92d296f3cbe512d4e8d294ef7510bd0ef",
+  "selected_candidate": "ordinal_full_inverse",
+  "decision": {
+    "status": "not accepted",
+    "primary_balanced_mae_ci_below_zero": true,
+    "no_significant_secondary_regression": false,
+    "continuous_ece_increase_at_most_0.01": false,
+    "continuous_ece_candidate_minus_baseline": 0.07102265316390155,
+    "calibration_gate_basis": "point estimate; no bootstrap interval",
+    "pearson_in_acceptance_gate": false,
+    "training_seeds": 1
+  },
+  "split": {
+    "excluded_previously_inspected": {
+      "utterances": 355,
+      "phones": 9892,
+      "pseudo_speakers": 68,
+      "label_counts": [1233, 803, 7856]
+    },
+    "inner_fit": {
+      "utterances": 1715,
+      "phones": 54773,
+      "pseudo_speakers": 17,
+      "label_counts": [6674, 4317, 43782]
+    },
+    "inner_tune": {
+      "utterances": 190,
+      "phones": 5825,
+      "pseudo_speakers": 16,
+      "label_counts": [717, 452, 4656]
+    },
+    "inner_fit_tune_pseudo_speaker_overlap": 16,
+    "outer_fit": {
+      "utterances": 1905,
+      "phones": 60598,
+      "pseudo_speakers": 17,
+      "label_counts": [7391, 4769, 48438]
+    },
+    "outer_test": {
+      "utterances": 539,
+      "phones": 16753,
+      "pseudo_speakers": 9,
+      "label_counts": [2044, 1303, 13406]
+    },
+    "outer_fit_test_pseudo_speaker_overlap": 0,
+    "outer_test_pseudo_speaker_phone_counts": [
+      3877,
+      3184,
+      3091,
+      3037,
+      2910,
+      419,
+      114,
+      67,
+      54
+    ]
+  },
+  "inner_selection": {
+    "ctc_best_epoch": 11,
+    "ctc_best_phone_error_rate": 0.3303004291845494,
+    "arms": {
+      "ordinal_inverse_sqrt": {
+        "best_epoch": 16,
+        "balanced_mae": 22.669785590623828
+      },
+      "ordinal_full_inverse": {
+        "best_epoch": 28,
+        "balanced_mae": 20.923734105583446
+      },
+      "focal_ordinal": {
+        "best_epoch": 28,
+        "balanced_mae": 26.148017051527642
+      },
+      "continuous_huber": {
+        "best_epoch": 24,
+        "balanced_mae": 22.20237587494997,
+        "implementation": "scale-normalized Huber (Smooth L1), beta=0.10"
+      }
+    }
+  },
+  "outer_test": {
+    "baseline_arm": "ordinal_inverse_sqrt",
+    "candidate_arm": "ordinal_full_inverse",
+    "bootstrap_grouping": "pseudo_speaker",
+    "bootstrap_samples": 10000,
+    "baseline_metrics": {
+      "n_phones": 16753,
+      "balanced_mae": 23.617116876455935,
+      "mae": 17.64900015980594,
+      "qwk": 0.5556023475134695,
+      "macro_f1": 0.5501046275135245,
+      "balanced_accuracy": 0.6242396363743717,
+      "spearman": 0.5394484989557966,
+      "pearson": 0.5981997807403271,
+      "class_mae": {
+        "0": 38.39119417775867,
+        "1": 18.008655590546287,
+        "2": 14.451500861062836
+      },
+      "class_recall": {
+        "0": 0.3977495107632094,
+        "1": 0.6953184957789716,
+        "2": 0.779650902580934
+      }
+    },
+    "candidate_metrics": {
+      "n_phones": 16753,
+      "balanced_mae": 21.596207150934266,
+      "mae": 21.512176129488665,
+      "qwk": 0.503433558649153,
+      "macro_f1": 0.5349606878362133,
+      "balanced_accuracy": 0.6466667578361718,
+      "spearman": 0.5270184379394474,
+      "pearson": 0.5705633288710078,
+      "class_mae": {
+        "0": 28.22521183333941,
+        "1": 15.489375828187098,
+        "2": 21.0740337912763
+      },
+      "class_recall": {
+        "0": 0.5503913894324853,
+        "1": 0.718342287029931,
+        "2": 0.6712665970460988
+      }
+    },
+    "calibration": {
+      "bins": 10,
+      "weighting": "phone_token",
+      "baseline": {
+        "continuous_score_ece": 0.06675401207027831,
+        "mean_cumulative_threshold_brier": 0.10121353209556105,
+        "mean_cumulative_threshold_ece": 0.06712363240721991
+      },
+      "candidate": {
+        "continuous_score_ece": 0.13777666523417986,
+        "mean_cumulative_threshold_brier": 0.13826924710864186,
+        "mean_cumulative_threshold_ece": 0.14028642501225416
+      }
+    },
+    "candidate_minus_baseline": {
+      "balanced_mae": {
+        "estimate": -2.020909725521669,
+        "ci_low": -2.3573359715095976,
+        "ci_high": -1.7448732323478247
+      },
+      "mae": {
+        "estimate": 3.8631759696827253,
+        "ci_low": 3.614518184328537,
+        "ci_high": 4.185242879973757
+      },
+      "qwk": {
+        "estimate": -0.05216878886431653,
+        "ci_low": -0.05951330124991903,
+        "ci_high": -0.04304418334412926
+      },
+      "macro_f1": {
+        "estimate": -0.015143939677311202,
+        "ci_low": -0.01889600964374759,
+        "ci_high": -0.009489749461124573
+      },
+      "balanced_accuracy": {
+        "estimate": 0.022427121461800037,
+        "ci_low": 0.015662398148734276,
+        "ci_high": 0.028639801542108653
+      },
+      "spearman": {
+        "estimate": -0.012430061016349248,
+        "ci_low": -0.01776433668546651,
+        "ci_high": -0.009116174787263813
+      },
+      "class_mae_0": {
+        "estimate": -10.165982344419259,
+        "ci_low": -10.663658244999812,
+        "ci_high": -9.85905420131827
+      },
+      "class_mae_1": {
+        "estimate": -2.5192797623591883,
+        "ci_low": -3.2136326571564413,
+        "ci_high": -2.025449966337483
+      },
+      "class_mae_2": {
+        "estimate": 6.622532930213463,
+        "ci_low": 6.377926561157269,
+        "ci_high": 6.883168779636005
+      },
+      "class_recall_0": {
+        "estimate": 0.15264187866927592,
+        "ci_low": 0.1372804163955758,
+        "ci_high": 0.16253105786237684
+      },
+      "class_recall_1": {
+        "estimate": 0.023023791250959325,
+        "ci_low": -0.009947068927558641,
+        "ci_high": 0.0527245783890157
+      },
+      "class_recall_2": {
+        "estimate": -0.10838430553483513,
+        "ci_low": -0.11784110894683338,
+        "ci_high": -0.09848307205457305
+      }
+    },
+    "alignment_fallbacks": {
+      "fit": 0,
+      "test": 0
+    }
+  },
+  "provenance": {
+    "train_manifest_sha256": "f6650855bf62ebbec1e1a60cb8fb491d0e5fb0fb20667d402299fc1238a8148b",
+    "speaker_clusters_sha256": "aa6492c1ef3fa4f2ab686580973a10acae40ae377cee8e2ec1f5969217a7e448",
+    "validation_manifest_loaded": false,
+    "seed": 42,
+    "device": "mps",
+    "scorer_device": "cpu"
+  }
+}

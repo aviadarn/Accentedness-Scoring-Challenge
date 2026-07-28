@@ -601,19 +601,28 @@ def train_ctc_fixed(
     *,
     epochs: int,
 ) -> list[dict[str, float | int]]:
-    """Retrain CTC on all training rows for a model-selected epoch count."""
+    """Retrain CTC on all rows while preserving the selection LR schedule."""
 
     if epochs < 1:
         raise ValueError("fixed CTC retraining requires at least one epoch")
+    if epochs > config.max_ctc_epochs:
+        raise ValueError("fixed CTC epochs cannot exceed max_ctc_epochs")
     durations = audio_durations(records)
     history: list[dict[str, float | int]] = []
     warmup = min(config.ctc_warmup_epochs, epochs)
     phases = (
-        ((0, epochs),)
+        ((0, epochs, config.max_ctc_epochs),)
         if device.type == "mps"
-        else ((0, warmup), (2, epochs - warmup))
+        else (
+            (0, warmup, config.ctc_warmup_epochs),
+            (
+                2,
+                epochs - warmup,
+                config.max_ctc_epochs - config.ctc_warmup_epochs,
+            ),
+        )
     )
-    for top_layers, phase_epochs in phases:
+    for top_layers, phase_epochs, schedule_epochs in phases:
         if phase_epochs <= 0:
             continue
         _set_only_ctc_trainable(model, top_layers)
@@ -640,7 +649,10 @@ def train_ctc_fixed(
         optimizer, scheduler = _optimizer_scheduler(
             groups,
             weight_decay=config.weight_decay,
-            total_steps=steps * phase_epochs,
+            # Selection schedules each phase over its declared maximum.  Keep
+            # that horizon here and merely stop at the selected epoch so the
+            # retrained CTC follows the same learning-rate trajectory.
+            total_steps=steps * schedule_epochs,
         )
         for _ in range(phase_epochs):
             epoch = len(history)
