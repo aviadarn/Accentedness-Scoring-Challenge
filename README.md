@@ -19,6 +19,7 @@ training, so these numbers should not be read as new-speaker performance.
 - [Submission setup and commands](submission/README.md)
 - [Final challenge writeup](submission/WRITEUP.md)
 - [Experiment index](experiments/README.md)
+- [Presentation deck](presentation/accentedness-scoring-challenge.pptx)
 - [Local run-output convention](runs/README.md)
 
 ## Repository map
@@ -34,6 +35,10 @@ training, so these numbers should not be read as new-speaker performance.
 │   └── E01-... through E13-.../    # One reproducible experiment card each
 ├── runs/
 │   └── README.md                    # Convention for ignored run artifacts
+├── presentation/
+│   ├── accentedness-scoring-challenge.pptx
+│   ├── accentedness-scoring-challenge.pdf
+│   └── SPEAKER_NOTES.md
 └── submission/
     ├── accent_score/                # Model, training, metrics, and audit code
     ├── model/                       # Selected self-contained checkpoint
