@@ -87,11 +87,16 @@ Whisper still recognizes confidently. More diverse speaker-disjoint training,
 expert label review, phone-specific calibration, and a stronger accent-sensitive
 speech encoder are the most promising fixes.
 
-The controlled own-voice American/non-native pair is not complete, so I do not
-claim that requirement passed. An informal UI trial appeared too lenient for a
-strong accent, but it was not a controlled labeled experiment. `SNIFF_TEST.md`
-contains the fixed sentence, phonemes, filenames, and commands needed to finish
-the comparison reproducibly with two recordings.
+For the controlled own-voice test, the same speaker read “We are both children
+together” in their best American and non-native accents. The American rendition
+averaged 70.05 versus 66.92 for the non-native rendition, a small +3.13-point
+change in the expected direction; only 10/20 phones were higher. `/ɪ/` (+38.36)
+and `/l/` (+17.40) reacted strongly, while `/ɹ/` moved the wrong way (-11.82)
+and several other phones barely changed. The recordings also differed in pace
+(2.76s versus 4.08s), which is a confound. I therefore call this a marginal
+utterance-level directional pass, not a convincing phone-level pass. Because
+the pair has no expert phone labels, I do not report MAE or F1 for it. The full
+comparison and reproducible protocol are in `SNIFF_TEST.md`.
 
 ## What the Scores Capture
 

@@ -2,9 +2,10 @@
 
 ## Status
 
-The reproducible held-out-audio pass is complete. The controlled own-voice
-comparison is pending two recordings: one American-accent rendition and one
-non-native-accent rendition of the same sentence.
+The reproducible held-out-audio pass and controlled own-voice comparison are
+complete. The paired recording moved in the expected direction at the mean,
+but only weakly and inconsistently across phones, so it is not a clean sniff-test
+pass.
 
 ## Held-out findings
 
@@ -38,6 +39,29 @@ of the dataset with the documented `sniff_test.py` command.
 - `utt_2076.json`
 - `utt_0942.json`
 
+## Controlled own-voice findings
+
+The same speaker recorded the fixed sentence once in their best American
+accent and once in a non-native accent. Both files are mono PCM16 WAV at 16 kHz.
+
+| Rendition | Duration | Mean score |
+|---|---:|---:|
+| Best American accent | 2.76s | 70.05 |
+| Non-native accent | 4.08s | 66.92 |
+
+The American rendition scored `+3.13` points higher on average, but only
+`10/20` individual phones were higher. The clearest expected-direction changes
+were `/ɪ/` (`+38.36`), `/l/` (`+17.40`), `/j/` (`+9.41`), the first `/ʌ/`
+(`+8.30`), and `/θ/` (`+6.75`). Important counterexamples were `/ɹ/` (`-11.82`),
+the second `/ʌ/` (`-5.80`), `/ð/` (`-5.63`), and final `/ɝ/` (`-5.12`).
+
+This is a marginal directional pass at the utterance mean, not a convincing
+phone-level pass. It supports the earlier finding that the model is too lenient
+and misses some subtle accent changes. The pace difference between recordings
+is also a confound, so a stronger follow-up would repeat several matched-pace
+takes and have an expert verify the intended phone realizations. These files
+have no human phone labels, so MAE and F1 are not reported.
+
 ## Controlled own-voice protocol
 
 Record this same sentence twice:
@@ -60,6 +84,15 @@ data/sniff_test/non_native.wav
 Use mono 16-bit PCM WAV at 16 kHz when possible. Aim for one clean 2–8 second
 sentence with little leading or trailing silence; recordings over 30 seconds
 are rejected.
+
+For guided local collection and an immediate comparison, run:
+
+```bash
+uv run python voice_pair_app.py
+```
+
+The helper listens only on `127.0.0.1` and saves the normalized pair to the
+filenames above.
 
 Run from `submission/`:
 
