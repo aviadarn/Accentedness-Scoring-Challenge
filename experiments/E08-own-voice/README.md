@@ -44,7 +44,7 @@ reliable accent sensitivity, and the pace mismatch is a material confound.
 From the repository root, collect a new normalized pair and score it:
 
 ```bash
-uv run --project submission python submission/tools/audits/voice_pair_app.py
+uv run --project submission python experiments/E08-own-voice/app.py
 ```
 
 The exact sentence, phones, filenames, and separate CLI commands are in the
@@ -52,15 +52,15 @@ detailed protocol.
 
 ## Tracked artifacts
 
-- [Detailed protocol and results](../../submission/docs/SNIFF_TEST.md)
-- [Pair-recording application](../../submission/tools/audits/voice_pair_app.py)
-- [Scoring CLI](../../submission/tools/audits/sniff_test.py)
-- [Application tests](../../submission/tests/test_voice_pair_app.py)
+- [Detailed protocol and results](../E07-sniff-tests/SNIFF_TEST.md#controlled-own-voice-findings)
+- [Pair-recording application](app.py)
+- [Scoring CLI](../E07-sniff-tests/run.py)
+- [Application tests](../tests/test_voice_pair_app.py)
 
 ## Local artifacts
 
 The private recordings live under `data/sniff_test/` and generated reports
-under `submission/sniff_reports/`. Both locations are git-ignored.
+under `runs/E08-own-voice/`. Both locations are git-ignored.
 
 ## Limitations
 

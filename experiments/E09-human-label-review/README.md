@@ -44,7 +44,7 @@ labels, and no automatic relabeling is authorized.
 From the repository root, open the prepared local reviewer:
 
 ```bash
-uv run --project submission python submission/tools/audits/label_review.py serve \
+uv run --project submission python experiments/E09-human-label-review/review.py serve \
   --review-dir data/label_reviews/native-like-check-seed42
 ```
 
@@ -52,10 +52,9 @@ Use `status` before `reveal`; reveal remains sealed until every item is rated.
 
 ## Tracked artifacts
 
-- [CLI launcher](../../submission/tools/audits/label_review.py)
-- [Blind-packet and reviewer implementation](../../submission/accent_score/label_review.py)
-- [Workflow tests](../../submission/tests/test_label_review.py)
-- [Audit-tool overview](../../submission/tools/audits/README.md)
+- [CLI launcher](review.py)
+- [Blind-packet and reviewer implementation](../accent_experiments/label_review.py)
+- [Workflow tests](../tests/test_label_review.py)
 
 ## Local artifacts
 

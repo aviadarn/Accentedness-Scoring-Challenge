@@ -96,7 +96,8 @@ and several other phones barely changed. The recordings also differed in pace
 (2.76s versus 4.08s), which is a confound. I therefore call this a marginal
 utterance-level directional pass, not a convincing phone-level pass. Because
 the pair has no expert phone labels, I do not report MAE or F1 for it. The full
-comparison and reproducible protocol are in `docs/SNIFF_TEST.md`.
+comparison and reproducible protocol are in
+[`../experiments/E07-sniff-tests/SNIFF_TEST.md`](../experiments/E07-sniff-tests/SNIFF_TEST.md).
 
 ## What the Scores Capture
 

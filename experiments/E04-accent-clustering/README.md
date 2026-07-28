@@ -51,7 +51,7 @@ Cluster IDs are categorical and must not be interpreted as a ranking.
 Run from the repository root after E03:
 
 ```bash
-uv run --project submission python submission/tools/analysis/accent_cluster.py \
+uv run --project submission python experiments/E04-accent-clustering/run.py \
   --dataset-root data/dataset \
   --speaker-clusters runs/E03-speaker-leakage/seed-42-repro/clusters.json \
   --output-dir runs/E04-accent-clustering/seed-42-repro
@@ -60,7 +60,7 @@ uv run --project submission python submission/tools/analysis/accent_cluster.py \
 The local explorer is launched with:
 
 ```bash
-uv run --project submission python submission/tools/analysis/accent_cluster_app.py \
+uv run --project submission python experiments/E04-accent-clustering/app.py \
   --cluster-dir runs/E04-accent-clustering/seed-42-repro \
   --data-dir data/dataset \
   --port 7863
@@ -70,10 +70,10 @@ uv run --project submission python submission/tools/analysis/accent_cluster_app.
 
 - [Readable report](../../data/accent_clusters/report.md)
 - [Machine-readable report](../../data/accent_clusters/report.json)
-- [Clustering entry point](../../submission/tools/analysis/accent_cluster.py)
-- [Clustering implementation](../../submission/accent_score/accent_cluster.py)
-- [Explorer app](../../submission/tools/analysis/accent_cluster_app.py)
-- [Clustering tests](../../submission/tests/test_accent_cluster.py)
+- [Clustering entry point](run.py)
+- [Clustering implementation](../accent_experiments/accent_cluster.py)
+- [Explorer app](app.py)
+- [Clustering tests](../tests/test_accent_cluster.py)
 
 ## Local artifacts
 

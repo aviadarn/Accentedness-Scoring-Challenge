@@ -48,24 +48,24 @@ failures; it does not justify relabeling any dataset row.
 From the repository root:
 
 ```bash
-uv run --project submission python submission/tools/audits/sniff_test.py \
+uv run --project submission python experiments/E07-sniff-tests/run.py \
   --manifest data/dataset/val.jsonl \
   --utterance-id utt_2163 \
-  --output submission/sniff_reports/utt_2163.json
+  --output runs/E07-sniff-tests/utt_2163.json
 ```
 
 Repeat with the other utterance IDs in the detailed report.
 
 ## Tracked artifacts
 
-- [Detailed protocol and results](../../submission/docs/SNIFF_TEST.md)
-- [CLI launcher](../../submission/tools/audits/sniff_test.py)
-- [Evaluation implementation](../../submission/accent_score/sniff.py)
+- [Detailed protocol and results](SNIFF_TEST.md)
+- [CLI launcher](run.py)
+- [Evaluation implementation](../accent_experiments/sniff.py)
 - [Submission writeup](../../submission/WRITEUP.md)
 
 ## Local artifacts
 
-Phone-level JSON reports are written to `submission/sniff_reports/`. They are
+Phone-level JSON reports belong under `runs/E07-sniff-tests/`. They are
 git-ignored because they contain row-level text, labels, and local audio paths.
 
 ## Limitations

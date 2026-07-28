@@ -49,12 +49,13 @@ and sidecar commands in the audit guide.
 
 ## Tracked artifacts
 
-- [Full audit procedure](../../submission/docs/GOPT_AUDIT.md)
-- [Measured pilot results](../../submission/docs/GOPT_PILOT_RESULTS.md)
-- [Isolated teacher runtime](../../submission/teacher_runtime/gopt/README.md)
-- [GOPT tool guide](../../submission/tools/gopt/README.md)
-- [Kaldi preparation CLI](../../submission/tools/gopt/gopt_kaldi_prep.py)
-- [Feature attestation CLI](../../submission/tools/gopt/gopt_kaldi_attest.py)
+- [Full audit procedure](GOPT_AUDIT.md)
+- [Measured pilot results](GOPT_PILOT_RESULTS.md)
+- [Isolated teacher runtime](runtime/README.md)
+- [Kaldi preparation CLI](prepare.py)
+- [Feature attestation CLI](attest.py)
+- [Kaldi extraction script](gopt_kaldi_extract.sh)
+- [Workflow tests](../tests/test_gopt_pipeline.py)
 
 ## Local artifacts
 

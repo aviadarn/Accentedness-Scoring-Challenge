@@ -73,8 +73,8 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 uv run python train.py \
 ## Local artifacts
 
 Downloaded pretrained-model caches and disposable intermediate checkpoints are
-git-ignored. `submission/runs/quick-model/` is a development smoke run, not
-evidence for this result.
+git-ignored. `runs/E01-production-model/quick-model/` is a development smoke
+run, not evidence for this result.
 
 ## Limitations
 

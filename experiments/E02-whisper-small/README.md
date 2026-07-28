@@ -60,18 +60,19 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 uv run python train.py \
 
 ## Tracked artifacts
 
-- [Metrics](../../submission/models/whisper-small/metrics.json)
-- [Model-selection record](../../submission/models/whisper-small/model_selection.json)
-- [Training configuration](../../submission/models/whisper-small/training_config.json)
-- [Training history](../../submission/models/whisper-small/training_history.json)
+- [Metrics](artifacts/model/metrics.json)
+- [Model-selection record](artifacts/model/model_selection.json)
+- [Training configuration](artifacts/model/training_config.json)
+- [Training history](artifacts/model/training_history.json)
 - [Shared training implementation](../../submission/accent_score/training.py)
 
 ## Local artifacts
 
-The comparison weight file
-`submission/models/whisper-small/model.safetensors` and pretrained-model caches
-are git-ignored because of their size. The tracked directory is therefore an
-experiment record, not a self-contained distributable checkpoint.
+The comparison weight file at
+`experiments/E02-whisper-small/artifacts/model/model.safetensors` and
+pretrained-model caches are git-ignored because of their size. The tracked
+directory is therefore an experiment record, not a self-contained
+distributable checkpoint.
 
 ## Limitations
 

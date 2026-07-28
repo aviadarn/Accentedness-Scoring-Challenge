@@ -629,7 +629,7 @@ def slide_09(prs: Presentation):
     add_text(slide, "The model reacts when accent also hurts expected-phone recognition, but can miss subtler non-American realizations that Whisper still recognizes confidently.", 7.15, 4.64, 4.62, 1.05, size=12, fill=MUTED)
     add_rect(slide, 7.15, 5.83, 4.62, 0.47, fill=CARD_2, line=CORAL)
     add_text(slide, "Conclusion: marginal utterance-level pass—not a phone-level pass.", 7.35, 5.95, 4.22, 0.21, size=9.5, fill=CORAL, bold=True, align=PP_ALIGN.CENTER)
-    add_footer(slide, "Sources: submission/docs/SNIFF_TEST.md; experiments/E07 and E08")
+    add_footer(slide, "Sources: experiments/E07-sniff-tests/SNIFF_TEST.md; E07 and E08")
     return slide
 
 
@@ -650,7 +650,7 @@ def slide_10(prs: Presentation):
     add_rect(slide, 0.72, 6.15, 11.90, 0.55, fill=CARD_2, line=AQUA)
     add_text(slide, "Next valid step", 0.94, 6.30, 1.32, 0.20, size=9, fill=AQUA, bold=True)
     add_text(slide, "Blinded expert review. The deterministic packets exist; no human-rating ledger exists yet.", 2.41, 6.24, 9.85, 0.28, size=12, fill=WHITE, bold=True)
-    add_footer(slide, "Sources: experiments/E09–E13; submission/docs/GOPT_PILOT_RESULTS.md")
+    add_footer(slide, "Sources: experiments/E09–E13; E11/GOPT_PILOT_RESULTS.md")
     return slide
 
 

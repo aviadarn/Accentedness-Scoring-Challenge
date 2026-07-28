@@ -32,7 +32,9 @@ training, so these numbers should not be read as new-speaker performance.
 │   └── dataset/                     # Local challenge data; git-ignored
 ├── experiments/
 │   ├── README.md                    # Experiment status and decision index
-│   └── E01-... through E13-.../    # One reproducible experiment card each
+│   ├── accent_experiments/         # Shared research implementation package
+│   ├── tests/                       # Experiment-only tests
+│   └── E01-... through E13-.../    # Code, evidence, and decision per trial
 ├── runs/
 │   └── README.md                    # Convention for ignored run artifacts
 ├── presentation/
@@ -40,20 +42,19 @@ training, so these numbers should not be read as new-speaker performance.
 │   ├── accentedness-scoring-challenge.pdf
 │   └── SPEAKER_NOTES.md
 └── submission/
-    ├── accent_score/                # Model, training, metrics, and audit code
+    ├── accent_score/                # Production model and training package
     ├── model/                       # Selected self-contained checkpoint
-    ├── tools/                       # Optional analysis and audit launchers
-    ├── docs/                        # Supporting experiment reports
+    ├── tests/                       # Evaluator-facing production tests
     ├── train.py
     ├── inference.py
     ├── demo_app.py
     └── WRITEUP.md
 ```
 
-`submission/` is intentionally self-contained and keeps the paths required by
-the challenge. Exploratory evidence is catalogued separately in
-`experiments/README.md`; generated private or heavyweight outputs remain in
-ignored local directories.
+`submission/` is intentionally self-contained and limited to the paths needed
+to train, evaluate, and run the selected model. Experiment code, rejected
+artifacts, audit runtimes, and supporting evidence live under `experiments/`;
+generated private or heavyweight outputs remain in ignored local directories.
 
 ## Quick start
 
@@ -82,8 +83,9 @@ Run the test suite:
 uv run pytest
 ```
 
-Training and experiment-specific reproduction commands are documented in the
-[submission guide](submission/README.md) and [experiment index](experiments/README.md).
+Production commands are documented in the
+[submission guide](submission/README.md). Research reproduction commands and
+the complete decision trail are in the [experiment index](experiments/README.md).
 
 ## Responsible use
 

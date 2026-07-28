@@ -51,23 +51,23 @@ models:
 JUDGE_AUDIT_DIR="$PWD/data/judge_audits/gemma-new"
 JUDGE_MODEL_DIR="$PWD/data/judge_models/gemma-new"
 
-uv run --project submission python submission/tools/audits/judge_audit.py prepare \
+uv run --project submission python experiments/E10-local-llm-judges/audit.py prepare \
   --data-dir data/dataset --output-dir "$JUDGE_AUDIT_DIR" --seed 42
-uv run --project submission python submission/tools/audits/judge_audit.py preflight \
+uv run --project submission python experiments/E10-local-llm-judges/audit.py preflight \
   --audit-dir "$JUDGE_AUDIT_DIR" --judge-model-path "$JUDGE_MODEL_DIR" --seed 42
-uv run --project submission python submission/tools/audits/judge_audit.py run \
+uv run --project submission python experiments/E10-local-llm-judges/audit.py run \
   --audit-dir "$JUDGE_AUDIT_DIR" --judge-model-path "$JUDGE_MODEL_DIR"
-uv run --project submission python submission/tools/audits/judge_audit.py validate \
+uv run --project submission python experiments/E10-local-llm-judges/audit.py validate \
   --audit-dir "$JUDGE_AUDIT_DIR"
 ```
 
 ## Tracked artifacts
 
-- [Audit CLI](../../submission/tools/audits/judge_audit.py)
-- [Audit implementation and gates](../../submission/accent_score/judge_audit.py)
-- [Isolated MLX runtime](../../submission/judge_runtime/README.md)
-- [Human disagreement reviewer](../../submission/tools/audits/judge_review.py)
-- [Audit-tool overview](../../submission/tools/audits/README.md)
+- [Audit CLI](audit.py)
+- [Audit implementation and gates](../accent_experiments/judge_audit.py)
+- [Isolated MLX runtime](runtime/README.md)
+- [Human disagreement reviewer](review.py)
+- [Workflow tests](../tests/test_judge_audit.py)
 
 ## Local artifacts
 

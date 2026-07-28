@@ -47,7 +47,7 @@ From the repository root, run against a fresh output directory. If
 not save it:
 
 ```bash
-uv run --project submission python submission/tools/audits/openai_label_judge.py \
+uv run --project submission python experiments/E13-openai-audio-judge/judge.py \
   --review-dir data/label_reviews/native-like-check-seed42 \
   --output-dir data/label_reviews/native-like-check-seed42/openai-new-run
 ```
@@ -57,10 +57,10 @@ cost before rerunning.
 
 ## Tracked artifacts
 
-- [CLI launcher](../../submission/tools/audits/openai_label_judge.py)
-- [Secure audit implementation](../../submission/accent_score/openai_label_judge.py)
-- [Validation and transport tests](../../submission/tests/test_openai_label_judge.py)
-- [Source blind-review workflow](../../submission/accent_score/label_review.py)
+- [CLI launcher](judge.py)
+- [Secure audit implementation](../accent_experiments/openai_label_judge.py)
+- [Validation and transport tests](../tests/test_openai_label_judge.py)
+- [Source blind-review workflow](../accent_experiments/label_review.py)
 
 ## Local artifacts
 

@@ -44,7 +44,7 @@ there is no authorization for automatic relabeling.
 From the repository root, open the prepared local reviewer:
 
 ```bash
-uv run --project submission python submission/tools/gopt/gopt_audit.py review-serve \
+uv run --project submission python experiments/E12-gopt-human-review/review.py review-serve \
   --review-dir data/label_reviews/gopt-disagreements-exact-seed42
 ```
 
@@ -53,12 +53,12 @@ ratings are complete.
 
 ## Tracked artifacts
 
-- [GOPT tool guide](../../submission/tools/gopt/README.md)
-- [Review and sidecar CLI](../../submission/tools/gopt/gopt_audit.py)
-- [Review implementation](../../submission/accent_score/gopt_review.py)
-- [Human packet implementation](../../submission/accent_score/label_review.py)
-- [GOPT audit guide](../../submission/docs/GOPT_AUDIT.md)
-- [Teacher pilot result](../../submission/docs/GOPT_PILOT_RESULTS.md)
+- [Review and sidecar CLI](review.py)
+- [Review implementation](../accent_experiments/gopt_review.py)
+- [Human packet implementation](../accent_experiments/label_review.py)
+- [GOPT audit guide](../E11-gopt-teacher/GOPT_AUDIT.md)
+- [Teacher pilot result](../E11-gopt-teacher/GOPT_PILOT_RESULTS.md)
+- [Workflow tests](../tests/test_gopt_review.py)
 
 ## Local artifacts
 

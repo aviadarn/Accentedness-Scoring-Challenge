@@ -53,7 +53,7 @@ Run from the repository root:
 
 ```bash
 PYTORCH_ENABLE_MPS_FALLBACK=1 uv run --project submission python \
-  submission/tools/analysis/speaker_analysis.py \
+  experiments/E03-speaker-leakage/run.py \
   --dataset-root data/dataset \
   --output-directory runs/E03-speaker-leakage/seed-42-repro
 ```
@@ -62,9 +62,9 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 uv run --project submission python \
 
 - [Readable report](../../data/speaker_clusters/report.md)
 - [Machine-readable report](../../data/speaker_clusters/report.json)
-- [Analysis entry point](../../submission/tools/analysis/speaker_analysis.py)
-- [Analysis implementation](../../submission/accent_score/speaker_analysis.py)
-- [Speaker-clustering tests](../../submission/tests/test_speaker.py)
+- [Analysis entry point](run.py)
+- [Analysis implementation](../accent_experiments/speaker_analysis.py)
+- [Speaker-clustering tests](../tests/test_speaker.py)
 
 ## Local artifacts
 

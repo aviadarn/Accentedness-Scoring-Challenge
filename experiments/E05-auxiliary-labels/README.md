@@ -46,15 +46,16 @@ shifted error onto the most-accented class. The baseline was retained.
 
 ## Reproduce
 
-Run from `submission/` after E03:
+Run from the repository root after E03:
 
 ```bash
-PYTORCH_ENABLE_MPS_FALLBACK=1 HF_HUB_OFFLINE=1 uv run python train.py \
-  --data-dir ../data/dataset \
-  --output-dir ../runs/E05-auxiliary-labels/seed-42-repro \
+PYTORCH_ENABLE_MPS_FALLBACK=1 HF_HUB_OFFLINE=1 uv run --project submission python \
+  experiments/E05-auxiliary-labels/run.py \
+  --data-dir data/dataset \
+  --output-dir runs/E05-auxiliary-labels/seed-42-repro \
   --device auto \
   --seed 42 \
-  --speaker-clusters ../runs/E03-speaker-leakage/seed-42-repro/clusters.json \
+  --speaker-clusters runs/E03-speaker-leakage/seed-42-repro/clusters.json \
   --selection-split speaker \
   --aux-severity-weight 0.05 \
   --aux-pattern-weight 0.10 \
@@ -65,16 +66,16 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 HF_HUB_OFFLINE=1 uv run python train.py \
 ## Tracked artifacts
 
 - [Experiment report](../../data/auxiliary_training/report.md)
-- [Auxiliary-label implementation](../../submission/accent_score/auxiliary_labels.py)
-- [Auxiliary-loss implementation](../../submission/accent_score/auxiliary_loss.py)
-- [Training integration](../../submission/accent_score/training.py)
-- [Label tests](../../submission/tests/test_auxiliary_labels.py)
-- [Loss tests](../../submission/tests/test_auxiliary_loss.py)
+- [Auxiliary-label implementation](../accent_experiments/auxiliary_labels.py)
+- [Auxiliary-loss implementation](../accent_experiments/auxiliary_loss.py)
+- [Frozen experiment runner](../accent_experiments/auxiliary_training.py)
+- [Label tests](../tests/test_auxiliary_labels.py)
+- [Loss tests](../tests/test_auxiliary_loss.py)
 
 ## Local artifacts
 
 The full candidate checkpoint, histories, target hashes, and detailed metrics
-are under the git-ignored `submission/runs/auxiliary-speaker-s42/` directory.
+belong under the git-ignored `runs/E05-auxiliary-labels/` directory.
 Row-level auxiliary targets remain local because they encode inferred voice
 membership.
 

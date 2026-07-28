@@ -53,7 +53,7 @@ Run from the repository root after E03:
 
 ```bash
 PYTORCH_ENABLE_MPS_FALLBACK=1 HF_HUB_OFFLINE=1 uv run --project submission python \
-  submission/tools/analysis/objective_experiment.py \
+  experiments/E06-scorer-objectives/run.py \
   --data-dir data/dataset \
   --speaker-clusters runs/E03-speaker-leakage/seed-42-repro/clusters.json \
   --output-dir runs/E06-scorer-objectives/seed-42-repro \
@@ -66,16 +66,16 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 HF_HUB_OFFLINE=1 uv run --project submission pytho
 
 - [Readable report](../../data/objective_training/report.md)
 - [Curated machine-readable results](../../data/objective_training/results.json)
-- [Experiment runner](../../submission/tools/analysis/objective_experiment.py)
-- [Experiment implementation](../../submission/accent_score/objective_experiment.py)
-- [Objective implementations](../../submission/accent_score/objectives.py)
-- [Calibration diagnostics](../../submission/accent_score/calibration.py)
-- [Experiment tests](../../submission/tests/test_objective_experiment.py)
+- [Experiment runner](run.py)
+- [Experiment implementation](../accent_experiments/objective_experiment.py)
+- [Objective implementations](../accent_experiments/objectives.py)
+- [Calibration diagnostics](../accent_experiments/calibration.py)
+- [Experiment tests](../tests/test_objective_experiment.py)
 
 ## Local artifacts
 
 The complete generated report, histories, and caches from the successful run
-are under the git-ignored `submission/runs/objective-comparison-s42-r3/`
+are under the git-ignored `runs/E06-scorer-objectives/objective-comparison-s42-r3/`
 directory.
 The adjacent unsuffixed and `-r2` directories are empty abandoned attempts.
 
