@@ -56,9 +56,12 @@ recordings on deployments you do not trust.
 Playback stays in the browser and does not send the sentence to a separate TTS
 service. The exact voice depends on the browser and operating system.
 
-This directory includes Hugging Face Space metadata and dependency manifests
-and is ready to use as a Gradio Space root. It is not published or deployed by
-this repository.
+Temporary public demo (verified July 28, 2026):
+https://d65667f48273d70724.gradio.live. This best-effort Gradio tunnel remains
+available only while the local host is running and may expire within one week.
+The directory also includes Hugging Face Space metadata and dependency
+manifests; permanent Gradio Space creation is currently blocked because the
+hosting account requires a paid plan for compute Spaces.
 
 ## Environment setup
 
