@@ -72,6 +72,12 @@ The regenerable embeddings, inferred `clusters.json`, and replacement
 `split_fit.jsonl` / `split_dev.jsonl` files under `data/speaker_clusters/` are
 git-ignored because they contain row-level or voice-group information.
 
+E03's `clusters.json` is intentionally fit on all audio because this experiment
+measures shipped-split leakage. It must not be used as an E14 model-selection
+group map. E14 has a separate preparation step that subsets the independent
+per-recording embeddings to `train.jsonl` before threshold calibration and
+linkage.
+
 ## Limitations
 
 The selected half-clip calibration has an estimated 8% equal-error rate; 38%

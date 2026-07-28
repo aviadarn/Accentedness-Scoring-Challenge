@@ -17,6 +17,11 @@ htmlcov/
 .venv/
 venv/
 
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
+
 # Build and packaging outputs
 build/
 dist/
@@ -51,6 +56,7 @@ data/accent_clusters/profiles.npz
 data/accent_clusters/recordings.jsonl
 data/accent_clusters/speakers.jsonl
 data/speaker_clusters/clusters.json
+data/speaker_clusters/train_only_groups.json
 data/speaker_clusters/split_*.jsonl
 
 # Regenerable speaker-embedding caches. Aggregate reports in the same directory

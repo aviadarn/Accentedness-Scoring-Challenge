@@ -14,6 +14,7 @@ from accent_experiments.objectives import (
     focal_ordinal_objective,
     inverse_frequency_class_weights,
     ordinal_bce_objective,
+    power_law_class_weights,
     scorer_objective,
 )
 
@@ -83,6 +84,43 @@ def test_inverse_frequency_weights_honor_mask_and_validate_fit_labels() -> None:
         inverse_frequency_class_weights([0, 1, 2.0])
     with pytest.raises(TypeError, match="boolean dtype"):
         inverse_frequency_class_weights(labels, phone_mask=mask.to(torch.long))
+
+
+def test_power_law_weights_cover_unweighted_sqrt_and_full_inverse_endpoints() -> None:
+    labels = [0] * 6 + [1] * 2 + [2]
+
+    unweighted = power_law_class_weights(labels, alpha=0.0)
+    inverse_sqrt = power_law_class_weights(labels, alpha=0.5)
+    full_inverse = power_law_class_weights(labels, alpha=1.0)
+
+    torch.testing.assert_close(unweighted, torch.ones(3))
+    assert inverse_sqrt[1] / inverse_sqrt[0] == pytest.approx(3.0**0.5)
+    assert inverse_sqrt[2] / inverse_sqrt[1] == pytest.approx(2.0**0.5)
+    assert inverse_sqrt[torch.tensor(labels)].mean().item() == pytest.approx(1.0)
+    torch.testing.assert_close(
+        full_inverse,
+        inverse_frequency_class_weights(labels),
+        rtol=0.0,
+        atol=0.0,
+    )
+
+
+def test_power_law_weights_honor_tensor_mask_and_validate_alpha() -> None:
+    labels = torch.tensor([[0, 0, 1, 2, 99]])
+    mask = torch.tensor([[True, True, True, True, False]])
+
+    expected = power_law_class_weights(iter([0, 0, 1, 2]), alpha=0.25)
+    actual = power_law_class_weights(labels, alpha=0.25, phone_mask=mask)
+    torch.testing.assert_close(actual, expected)
+
+    with pytest.raises(TypeError, match="alpha must be a real number"):
+        power_law_class_weights([0, 1, 2], alpha=True)
+    with pytest.raises(ValueError, match=r"alpha must be in \[0, 1\]"):
+        power_law_class_weights([0, 1, 2], alpha=-0.1)
+    with pytest.raises(ValueError, match=r"alpha must be in \[0, 1\]"):
+        power_law_class_weights([0, 1, 2], alpha=1.1)
+    with pytest.raises(ValueError, match="alpha must be finite"):
+        power_law_class_weights([0, 1, 2], alpha=float("nan"))
 
 
 def test_ordinal_wrapper_matches_existing_project_loss() -> None:

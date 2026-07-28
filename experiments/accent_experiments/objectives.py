@@ -53,6 +53,27 @@ def inverse_frequency_class_weights(
     default mask.  All three classes must be represented in the fit data.
     """
 
+    return power_law_class_weights(labels, alpha=1.0, phone_mask=phone_mask)
+
+
+def power_law_class_weights(
+    labels: Tensor | Iterable[int],
+    *,
+    alpha: float,
+    phone_mask: Tensor | None = None,
+) -> Tensor:
+    """Return mean-one class weights proportional to ``n_c ** -alpha``.
+
+    ``alpha`` controls rebalancing strength from unweighted (``0``) through
+    inverse-square-root (``0.5``) to full inverse-frequency weighting (``1``).
+    The proportional weights are normalized so their mean over the observed
+    phone tokens is one.  A tensor input may include negative padding labels,
+    which are ignored by the default mask.  All three classes must be
+    represented in the fit data.
+    """
+
+    alpha = _validate_power_alpha(alpha)
+
     if isinstance(labels, Tensor):
         _validate_label_dtype(labels)
         if phone_mask is None:
@@ -81,11 +102,13 @@ def inverse_frequency_class_weights(
     missing = torch.nonzero(counts == 0, as_tuple=False).flatten().tolist()
     if missing:
         raise ValueError(
-            "full inverse-frequency weighting requires all three classes; "
+            "power-law weighting requires all three classes; "
             f"missing labels: {missing}"
         )
     total = counts.sum()
-    return total / (3.0 * counts)
+    proportional_weights = counts.pow(-alpha)
+    normalization = total / torch.dot(counts, proportional_weights)
+    return proportional_weights * normalization
 
 
 def ordinal_bce_objective(
@@ -383,6 +406,17 @@ def _validate_positive_scalar(
     return result
 
 
+def _validate_power_alpha(alpha: float) -> float:
+    if isinstance(alpha, bool) or not isinstance(alpha, (int, float)):
+        raise TypeError("alpha must be a real number")
+    result = float(alpha)
+    if not torch.isfinite(torch.tensor(result)).item():
+        raise ValueError("alpha must be finite")
+    if not 0.0 <= result <= 1.0:
+        raise ValueError("alpha must be in [0, 1]")
+    return result
+
+
 __all__ = [
     "SCORER_OBJECTIVE_NAMES",
     "ScorerObjectiveName",
@@ -390,5 +424,6 @@ __all__ = [
     "focal_ordinal_objective",
     "inverse_frequency_class_weights",
     "ordinal_bce_objective",
+    "power_law_class_weights",
     "scorer_objective",
 ]

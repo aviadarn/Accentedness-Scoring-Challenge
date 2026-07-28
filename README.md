@@ -34,7 +34,7 @@ training, so these numbers should not be read as new-speaker performance.
 │   ├── README.md                    # Experiment status and decision index
 │   ├── accent_experiments/         # Shared research implementation package
 │   ├── tests/                       # Experiment-only tests
-│   └── E01-... through E13-.../    # Code, evidence, and decision per trial
+│   └── E01-... through E15-.../    # Code, evidence, and decision per trial
 ├── runs/
 │   └── README.md                    # Convention for ignored run artifacts
 ├── presentation/

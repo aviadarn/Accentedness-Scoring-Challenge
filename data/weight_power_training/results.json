@@ -1,0 +1,120 @@
+{
+  "schema_version": "e14-aggregate-v2",
+  "status": "rejected",
+  "decision": {
+    "selected_alpha": 0.5,
+    "baseline_alpha": 0.5,
+    "reason": "No stronger weight power passed every final promotion gate.",
+    "production_changed": false,
+    "rare_label_recall_requirement": {
+      "label_0_recall_strictly_improves": true,
+      "label_1_recall_strictly_improves": true,
+      "applies_to_every_promoted_candidate": true,
+      "added_during_final_policy_audit_after_raw_run": true,
+      "decision_recomputed_from_immutable_oof_summaries": true
+    }
+  },
+  "data_boundary": {
+    "manifest": "train.jsonl",
+    "validation_manifest_loaded": false,
+    "records": 2799,
+    "phones": 87243,
+    "pseudo_speaker_groups": 89,
+    "phone_weighted_effective_speakers": 21.780619369276465,
+    "folds": 5,
+    "zero_group_overlap": true,
+    "held_out_phones_by_fold": [17272, 16868, 17111, 18248, 17744],
+    "alignment_fallbacks": 0
+  },
+  "protocol": {
+    "ctc_epochs_per_fold": 9,
+    "scorer_epochs": 18,
+    "ctc_seed": 42,
+    "scorer_seeds": [7, 42, 101],
+    "weight_powers": [0.5, 0.6, 0.7, 0.8, 0.9]
+  },
+  "mean_across_scorer_seeds": {
+    "0.5": {
+      "balanced_mae": 23.41173991691386,
+      "mae": 18.05730401754937,
+      "qwk": 0.5595192323521619,
+      "macro_f1": 0.545394586774969,
+      "balanced_accuracy": 0.6236332670602601,
+      "spearman": 0.5437720513944813,
+      "label_0_recall": 0.37835895513060863,
+      "label_1_recall": 0.722909090909091,
+      "label_2_recall": 0.7696317551410807,
+      "continuous_ece": 0.07112374236001316
+    },
+    "0.6": {
+      "balanced_mae": 22.9219892292185,
+      "mae": 18.945788840714723,
+      "qwk": 0.5497584096909122,
+      "macro_f1": 0.543701201992601,
+      "balanced_accuracy": 0.6304115758561787,
+      "spearman": 0.5408638942855134,
+      "label_0_recall": 0.4102299712535933,
+      "label_1_recall": 0.7382787878787879,
+      "label_2_recall": 0.7427259684361549,
+      "continuous_ece": 0.0875568698733837
+    },
+    "0.7": {
+      "balanced_mae": 22.536682713382763,
+      "mae": 19.922335176094656,
+      "qwk": 0.5372179039252866,
+      "macro_f1": 0.5407583720858137,
+      "balanced_accuracy": 0.6362973758796215,
+      "spearman": 0.5373249007896816,
+      "label_0_recall": 0.4420384951881015,
+      "label_1_recall": 0.7516121212121213,
+      "label_2_recall": 0.7152415112386418,
+      "continuous_ece": 0.10433729037025148
+    },
+    "0.8": {
+      "balanced_mae": 22.271799493123435,
+      "mae": 21.003083133659114,
+      "qwk": 0.5220108142927308,
+      "macro_f1": 0.5353816400988962,
+      "balanced_accuracy": 0.639740339594197,
+      "spearman": 0.5329262629407022,
+      "label_0_recall": 0.47287839020122485,
+      "label_1_recall": 0.7604363636363637,
+      "label_2_recall": 0.6859062649450024,
+      "continuous_ece": 0.12158418844920689
+    },
+    "0.9": {
+      "balanced_mae": 22.12523175419194,
+      "mae": 22.193645306131717,
+      "qwk": 0.5049394864916721,
+      "macro_f1": 0.5282910898474121,
+      "balanced_accuracy": 0.6411241010964234,
+      "spearman": 0.5275570903082385,
+      "label_0_recall": 0.501281089863767,
+      "label_1_recall": 0.7660606060606061,
+      "label_2_recall": 0.6560306073648973,
+      "continuous_ece": 0.13937473515013854
+    }
+  },
+  "alpha_0.6_minus_0.5": {
+    "balanced_mae": -0.48975068769535923,
+    "mae": 0.8884848231653528,
+    "qwk": -0.00976082266124978,
+    "macro_f1": -0.0016933847823680237,
+    "label_0_recall": 0.03187101612298469,
+    "label_1_recall": 0.0153696969696969,
+    "label_2_recall": -0.026905786704925827,
+    "continuous_ece": 0.016433127513370532,
+    "label_0_recall_strictly_improves": true,
+    "label_1_recall_strictly_improves": true,
+    "passed_all_gates": false
+  },
+  "provenance": {
+    "train_manifest_sha256": "f6650855bf62ebbec1e1a60cb8fb491d0e5fb0fb20667d402299fc1238a8148b",
+    "pseudo_speaker_artifact_sha256": "f4d46c32c0a879828a95c43c113c9ffa4bf42cdba13dd337d59bbb73d192533a",
+    "pseudo_speaker_recording_keys_sha256": "62501bfafc7c397da2dd7478903fd63a27e20e8df123ed4b2c752b987c4f15d9",
+    "local_report_sha256": "c05860381e95082d76f0c8fa5d14d56eaabba1e7a5ad4d604847af2cff880159",
+    "local_oof_predictions_sha256": "915c70dc1f9efd8e79011a35d90de29765924f35060c7fb69b665c8e863d0102",
+    "local_fold_assignments_sha256": "1de6086316af1cea26ed0c04792e5e670bd86d4e257e26025d59f8f2eca0f20f",
+    "local_run": "runs/E14-weight-power/train-only-grouped-oof-s42-v1"
+  }
+}

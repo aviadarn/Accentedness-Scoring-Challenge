@@ -10,6 +10,16 @@ research conclusions and production decisions are organized in the
 [experiment index](../experiments/README.md); the final runnable system lives
 in [`submission/`](../submission/README.md).
 
+Derived metadata remains separate from the immutable source manifests. The
+[inferred metadata audit](metadata_sidecars/report.md) documents provisional
+pseudo-speaker groups, CTC occupancy spans, and the private reannotation queue.
+The [speaker-grouped weight comparison](weight_power_training/report.md)
+documents why stronger imbalance weighting was not promoted.
+For model selection, the separate
+[E14 train-only grouping report](speaker_clusters/train_only_report.md)
+documents a threshold and hierarchy fit without validation or unreferenced
+audio; E03's all-audio leakage map is not a valid training-fold artifact.
+
 > Inventory last verified: 2026-07-27. Statistics labeled **observed** were
 > computed from this local snapshot. Collection details not stated in the
 > challenge brief are treated as unknown.
