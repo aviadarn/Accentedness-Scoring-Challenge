@@ -1,0 +1,465 @@
+{
+  "embedder": "microsoft/wavlm-base-plus-sv",
+  "selected_threshold": 0.9196849358952407,
+  "selection_reason": "calibrated on recordings of at least 5s (416 genuine pairs, 14470 impostor pairs): equal-error point 0.8941 at 8.0% error and 7.99% false accepts; holding that false-accept rate on whole recordings gives 0.9197",
+  "calibration": {
+    "half_clip_equal_error_threshold": 0.8940619826316833,
+    "half_clip_equal_error_rate": 0.07960817473818513,
+    "false_accept_rate": 0.07988942639944718,
+    "calibrated_on_minimum_seconds": 5.0,
+    "duration_ladder": [
+      {
+        "min_seconds": 0.0,
+        "pairs": 2894,
+        "threshold": 0.8509440329140716,
+        "equal_error_rate": 0.1696613683483068,
+        "false_accept_rate": 0.1696613683483068
+      },
+      {
+        "min_seconds": 3.0,
+        "pairs": 1886,
+        "threshold": 0.8767294883728027,
+        "equal_error_rate": 0.11401345233968552,
+        "false_accept_rate": 0.11402902557014516
+      },
+      {
+        "min_seconds": 4.0,
+        "pairs": 1017,
+        "threshold": 0.8895094443688549,
+        "equal_error_rate": 0.08851178208193942,
+        "false_accept_rate": 0.08852798894263991
+      },
+      {
+        "min_seconds": 5.0,
+        "pairs": 416,
+        "threshold": 0.8940619826316833,
+        "equal_error_rate": 0.07960817473818513,
+        "false_accept_rate": 0.07988942639944718
+      }
+    ],
+    "bands": {
+      "genuine_half_clip": {
+        "pairs": 2894,
+        "percentiles": {
+          "p1": 0.6596945071220398,
+          "p5": 0.7679474115371704,
+          "p10": 0.8147192239761353,
+          "p25": 0.8775000423192978,
+          "p50": 0.9228322803974152,
+          "p75": 0.9503821581602097,
+          "p90": 0.9656128227710724,
+          "p95": 0.9725751131772995,
+          "p99": 0.9815417486429214
+        }
+      },
+      "impostor_half_clip": {
+        "pairs": 14470,
+        "percentiles": {
+          "p1": 0.20820771607996874,
+          "p5": 0.30430811733186547,
+          "p10": 0.3597776161981983,
+          "p25": 0.47466557735401693,
+          "p50": 0.6680933772370388,
+          "p75": 0.8163901480960689,
+          "p90": 0.8837582905333307,
+          "p95": 0.9118797607116049,
+          "p99": 0.9494905481001831
+        }
+      },
+      "impostor_whole_clip": {
+        "pairs": 14470,
+        "percentiles": {
+          "p1": 0.2782111967500077,
+          "p5": 0.35390027135956503,
+          "p10": 0.4024326240276423,
+          "p25": 0.5126636686690631,
+          "p50": 0.7105240022742763,
+          "p75": 0.8528951365732524,
+          "p90": 0.9108474273049069,
+          "p95": 0.9355863516832812,
+          "p99": 0.9702684860039088
+        }
+      }
+    }
+  },
+  "clusters": {
+    "cluster_count": 98,
+    "recordings": 3000,
+    "largest_cluster": 238,
+    "median_cluster_size": 2.0,
+    "singleton_fraction": 0.37755102040816324,
+    "mean_within_cluster_similarity": 0.950368111956325,
+    "mean_between_cluster_similarity": 0.665427662791044
+  },
+  "text_confound": {
+    "same_text_base_rate": 0.000838679528482609,
+    "same_text_within_clusters": 9.986739828782894e-05,
+    "lift": 0.11907694762565058,
+    "adjusted_mutual_information": -0.02208013209500942,
+    "multi_text_cluster_fraction": 1.0
+  },
+  "text_confound_acceptable": true,
+  "shipped_split": {
+    "shared_clusters": 25,
+    "validation_records": 100,
+    "validation_record_leakage": 0.97,
+    "validation_phone_leakage": 0.9796395193591455,
+    "validation_prompt_overlap": 0.92
+  },
+  "leakage_sensitivity": [
+    {
+      "similarity_threshold": 0.8,
+      "cluster_count": 9,
+      "shared_clusters": 4,
+      "validation_record_leakage": 0.99,
+      "validation_phone_leakage": 0.9973297730307076
+    },
+    {
+      "similarity_threshold": 0.81,
+      "cluster_count": 10,
+      "shared_clusters": 5,
+      "validation_record_leakage": 0.99,
+      "validation_phone_leakage": 0.9973297730307076
+    },
+    {
+      "similarity_threshold": 0.82,
+      "cluster_count": 12,
+      "shared_clusters": 6,
+      "validation_record_leakage": 0.99,
+      "validation_phone_leakage": 0.9973297730307076
+    },
+    {
+      "similarity_threshold": 0.83,
+      "cluster_count": 13,
+      "shared_clusters": 7,
+      "validation_record_leakage": 0.99,
+      "validation_phone_leakage": 0.9973297730307076
+    },
+    {
+      "similarity_threshold": 0.84,
+      "cluster_count": 15,
+      "shared_clusters": 8,
+      "validation_record_leakage": 0.99,
+      "validation_phone_leakage": 0.9973297730307076
+    },
+    {
+      "similarity_threshold": 0.85,
+      "cluster_count": 18,
+      "shared_clusters": 11,
+      "validation_record_leakage": 0.99,
+      "validation_phone_leakage": 0.9973297730307076
+    },
+    {
+      "similarity_threshold": 0.86,
+      "cluster_count": 21,
+      "shared_clusters": 12,
+      "validation_record_leakage": 0.99,
+      "validation_phone_leakage": 0.9973297730307076
+    },
+    {
+      "similarity_threshold": 0.87,
+      "cluster_count": 26,
+      "shared_clusters": 13,
+      "validation_record_leakage": 0.99,
+      "validation_phone_leakage": 0.9973297730307076
+    },
+    {
+      "similarity_threshold": 0.88,
+      "cluster_count": 36,
+      "shared_clusters": 13,
+      "validation_record_leakage": 0.98,
+      "validation_phone_leakage": 0.9916555407209613
+    },
+    {
+      "similarity_threshold": 0.89,
+      "cluster_count": 41,
+      "shared_clusters": 15,
+      "validation_record_leakage": 0.98,
+      "validation_phone_leakage": 0.9916555407209613
+    },
+    {
+      "similarity_threshold": 0.9,
+      "cluster_count": 55,
+      "shared_clusters": 17,
+      "validation_record_leakage": 0.97,
+      "validation_phone_leakage": 0.9796395193591455
+    },
+    {
+      "similarity_threshold": 0.91,
+      "cluster_count": 81,
+      "shared_clusters": 22,
+      "validation_record_leakage": 0.97,
+      "validation_phone_leakage": 0.9796395193591455
+    },
+    {
+      "similarity_threshold": 0.92,
+      "cluster_count": 100,
+      "shared_clusters": 25,
+      "validation_record_leakage": 0.97,
+      "validation_phone_leakage": 0.9796395193591455
+    },
+    {
+      "similarity_threshold": 0.93,
+      "cluster_count": 140,
+      "shared_clusters": 29,
+      "validation_record_leakage": 0.97,
+      "validation_phone_leakage": 0.9796395193591455
+    },
+    {
+      "similarity_threshold": 0.94,
+      "cluster_count": 211,
+      "shared_clusters": 37,
+      "validation_record_leakage": 0.95,
+      "validation_phone_leakage": 0.9666221628838452
+    },
+    {
+      "similarity_threshold": 0.95,
+      "cluster_count": 320,
+      "shared_clusters": 46,
+      "validation_record_leakage": 0.93,
+      "validation_phone_leakage": 0.955607476635514
+    },
+    {
+      "similarity_threshold": 0.96,
+      "cluster_count": 537,
+      "shared_clusters": 51,
+      "validation_record_leakage": 0.88,
+      "validation_phone_leakage": 0.9222296395193591
+    },
+    {
+      "similarity_threshold": 0.97,
+      "cluster_count": 944,
+      "shared_clusters": 65,
+      "validation_record_leakage": 0.81,
+      "validation_phone_leakage": 0.8775033377837116
+    },
+    {
+      "similarity_threshold": 0.98,
+      "cluster_count": 1745,
+      "shared_clusters": 54,
+      "validation_record_leakage": 0.56,
+      "validation_phone_leakage": 0.6281708945260347
+    },
+    {
+      "similarity_threshold": 0.99,
+      "cluster_count": 2823,
+      "shared_clusters": 11,
+      "validation_record_leakage": 0.11,
+      "validation_phone_leakage": 0.13885180240320427
+    }
+  ],
+  "unreferenced_audio": {
+    "count": 101,
+    "clusters": 28,
+    "shared_with_labeled": 27,
+    "recordings_in_shared_clusters": 100,
+    "shared_fraction": 0.9900990099009901
+  },
+  "speaker_disjoint_split": {
+    "fit": {
+      "records": 2534,
+      "phones": 80102,
+      "label_counts": [
+        9805,
+        6268,
+        64029
+      ],
+      "label_fractions": [
+        0.12240643179945569,
+        0.0782502309555317,
+        0.7993433372450126
+      ],
+      "unique_prompts": 1029
+    },
+    "dev": {
+      "records": 365,
+      "phones": 10137,
+      "label_counts": [
+        1265,
+        820,
+        8052
+      ],
+      "label_fractions": [
+        0.12479037190490283,
+        0.08089178257867219,
+        0.7943178455164249
+      ],
+      "unique_prompts": 319
+    },
+    "fit_clusters": 26,
+    "dev_clusters": 71,
+    "dev_phone_fraction": 0.11233502144305677,
+    "dropped_prompt_overlap_records": 0,
+    "prompt_overlap": 0.8712328767123287
+  },
+  "sweep": [
+    {
+      "similarity_threshold": 0.8,
+      "cluster_count": 7,
+      "largest_cluster": 1572,
+      "median_cluster_size": 12.0,
+      "singleton_fraction": 0.42857142857142855,
+      "text_lift": 0.9349234411890607
+    },
+    {
+      "similarity_threshold": 0.81,
+      "cluster_count": 8,
+      "largest_cluster": 1299,
+      "median_cluster_size": 142.5,
+      "singleton_fraction": 0.375,
+      "text_lift": 0.9099758494360722
+    },
+    {
+      "similarity_threshold": 0.82,
+      "cluster_count": 11,
+      "largest_cluster": 1296,
+      "median_cluster_size": 14.0,
+      "singleton_fraction": 0.2727272727272727,
+      "text_lift": 0.9157694956860974
+    },
+    {
+      "similarity_threshold": 0.83,
+      "cluster_count": 13,
+      "largest_cluster": 828,
+      "median_cluster_size": 14.0,
+      "singleton_fraction": 0.23076923076923078,
+      "text_lift": 0.8441525538042111
+    },
+    {
+      "similarity_threshold": 0.84,
+      "cluster_count": 15,
+      "largest_cluster": 828,
+      "median_cluster_size": 14.0,
+      "singleton_fraction": 0.26666666666666666,
+      "text_lift": 0.829002652166
+    },
+    {
+      "similarity_threshold": 0.85,
+      "cluster_count": 18,
+      "largest_cluster": 801,
+      "median_cluster_size": 55.0,
+      "singleton_fraction": 0.2222222222222222,
+      "text_lift": 0.8249106285160552
+    },
+    {
+      "similarity_threshold": 0.86,
+      "cluster_count": 21,
+      "largest_cluster": 705,
+      "median_cluster_size": 14.0,
+      "singleton_fraction": 0.23809523809523808,
+      "text_lift": 0.7706768215681475
+    },
+    {
+      "similarity_threshold": 0.87,
+      "cluster_count": 26,
+      "largest_cluster": 705,
+      "median_cluster_size": 8.5,
+      "singleton_fraction": 0.3076923076923077,
+      "text_lift": 0.767572142473144
+    },
+    {
+      "similarity_threshold": 0.88,
+      "cluster_count": 37,
+      "largest_cluster": 578,
+      "median_cluster_size": 3.0,
+      "singleton_fraction": 0.40540540540540543,
+      "text_lift": 0.7059549631886962
+    },
+    {
+      "similarity_threshold": 0.89,
+      "cluster_count": 45,
+      "largest_cluster": 578,
+      "median_cluster_size": 2.0,
+      "singleton_fraction": 0.4222222222222222,
+      "text_lift": 0.6895232953834791
+    },
+    {
+      "similarity_threshold": 0.9,
+      "cluster_count": 57,
+      "largest_cluster": 362,
+      "median_cluster_size": 2.0,
+      "singleton_fraction": 0.45614035087719296,
+      "text_lift": 0.47667086453273205
+    },
+    {
+      "similarity_threshold": 0.91,
+      "cluster_count": 80,
+      "largest_cluster": 362,
+      "median_cluster_size": 2.0,
+      "singleton_fraction": 0.4375,
+      "text_lift": 0.2659925124282409
+    },
+    {
+      "similarity_threshold": 0.9197,
+      "cluster_count": 96,
+      "largest_cluster": 233,
+      "median_cluster_size": 2.0,
+      "singleton_fraction": 0.3958333333333333,
+      "text_lift": 0.12393004735509003
+    },
+    {
+      "similarity_threshold": 0.92,
+      "cluster_count": 96,
+      "largest_cluster": 233,
+      "median_cluster_size": 2.0,
+      "singleton_fraction": 0.3958333333333333,
+      "text_lift": 0.12393004735509003
+    },
+    {
+      "similarity_threshold": 0.93,
+      "cluster_count": 134,
+      "largest_cluster": 230,
+      "median_cluster_size": 2.0,
+      "singleton_fraction": 0.44776119402985076,
+      "text_lift": 0.08921774503389839
+    },
+    {
+      "similarity_threshold": 0.94,
+      "cluster_count": 204,
+      "largest_cluster": 126,
+      "median_cluster_size": 2.0,
+      "singleton_fraction": 0.4803921568627451,
+      "text_lift": 0.028200845623031847
+    },
+    {
+      "similarity_threshold": 0.95,
+      "cluster_count": 307,
+      "largest_cluster": 113,
+      "median_cluster_size": 2.0,
+      "singleton_fraction": 0.4820846905537459,
+      "text_lift": 0.02661972123382602
+    },
+    {
+      "similarity_threshold": 0.96,
+      "cluster_count": 517,
+      "largest_cluster": 105,
+      "median_cluster_size": 1.0,
+      "singleton_fraction": 0.5261121856866537,
+      "text_lift": 0.0
+    },
+    {
+      "similarity_threshold": 0.97,
+      "cluster_count": 927,
+      "largest_cluster": 99,
+      "median_cluster_size": 1.0,
+      "singleton_fraction": 0.56957928802589,
+      "text_lift": 0.0
+    },
+    {
+      "similarity_threshold": 0.98,
+      "cluster_count": 1696,
+      "largest_cluster": 32,
+      "median_cluster_size": 1.0,
+      "singleton_fraction": 0.7128537735849056,
+      "text_lift": 0.0
+    },
+    {
+      "similarity_threshold": 0.99,
+      "cluster_count": 2732,
+      "largest_cluster": 5,
+      "median_cluster_size": 1.0,
+      "singleton_fraction": 0.9513177159590044,
+      "text_lift": 0.0
+    }
+  ]
+}

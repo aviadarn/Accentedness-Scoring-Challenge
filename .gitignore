@@ -1,0 +1,62 @@
+# macOS
+.DS_Store
+
+# Python bytecode and tooling caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.uv-cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local Python environments
+.venv/
+venv/
+
+# Build and packaging outputs
+build/
+dist/
+*.egg-info/
+
+# Disposable training outputs. The final submission/model/ artifact is
+# intentionally not ignored and should remain part of the submission.
+submission/.cache/
+submission/checkpoints/
+submission/runs/
+submission/outputs/
+submission/wandb/
+
+# Comparison checkpoints are regenerable and may exceed GitHub's 100 MiB
+# per-file limit. Keep their configs and metrics, but track only the selected
+# final checkpoint under submission/model/.
+submission/models/*/model.safetensors
+
+# Challenge inputs contain identifiable learner voices and ship without
+# documented redistribution/consent terms. Keep them local unless the data
+# owner supplies explicit publication rights.
+data/dataset/
+data/sniff_test/
+
+# Row-level and speaker-level derivatives remain local for the same privacy
+# reason. Aggregate reports are intentionally still tracked.
+data/accent_clusters/profiles.npz
+data/accent_clusters/recordings.jsonl
+data/accent_clusters/speakers.jsonl
+data/speaker_clusters/clusters.json
+data/speaker_clusters/split_*.jsonl
+submission/sniff_reports/
+
+# Regenerable speaker-embedding caches. Aggregate reports in the same directory
+# stay tracked.
+data/speaker_clusters/embeddings_*.npz
+
+# Local-only label-audit artifacts (copied voice recordings and model output)
+data/judge_audits/
+data/judge_models/
+data/gopt_audits/
+data/gopt_models/
+data/label_reviews/

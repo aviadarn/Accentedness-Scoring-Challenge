@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "accent-judge-runtime"
+version = "0.1.0"
+description = "Isolated, offline MLX-VLM judge runtime for the accent scoring audit"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "mlx-vlm==0.6.8",
+]
+
+[project.scripts]
+accent-judge-runtime = "judge_runtime.runner:main"
+prepare-accent-judge-model = "judge_runtime.prepare_model:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

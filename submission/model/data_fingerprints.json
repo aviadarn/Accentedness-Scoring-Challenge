@@ -1,0 +1,22 @@
+{
+  "device": "mps",
+  "packages": {
+    "numpy": "2.4.6",
+    "safetensors": "0.8.0",
+    "scikit-learn": "1.9.0",
+    "scipy": "1.17.1",
+    "soundfile": "0.14.0",
+    "torch": "2.12.1",
+    "transformers": "5.14.1"
+  },
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "python": "3.11.15 (main, Mar 20 2026, 00:41:54) [Clang 22.1.1 ]",
+  "scorer_device": "cpu",
+  "seed": 42,
+  "train_manifest_sha256": "f6650855bf62ebbec1e1a60cb8fb491d0e5fb0fb20667d402299fc1238a8148b",
+  "train_phones": 87243,
+  "train_utterances": 2799,
+  "validation_manifest_sha256": "3f324098b44857e0b70cd9ee1771513d54faf6d0905ca8521b5aeeef29ea23a4",
+  "validation_phones": 2996,
+  "validation_utterances": 100
+}

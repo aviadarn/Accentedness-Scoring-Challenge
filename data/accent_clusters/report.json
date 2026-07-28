@@ -1,0 +1,405 @@
+{
+  "candidates": [
+    {
+      "cluster_sizes": [
+        19,
+        6
+      ],
+      "eligible": true,
+      "k": 2,
+      "min_cluster_size": 6,
+      "selection_score": 0.411711595780517,
+      "silhouette": 0.18075785523700819,
+      "stability_mean_ari": 0.7581422065957802,
+      "stability_std_ari": 0.3665905265142682
+    },
+    {
+      "cluster_sizes": [
+        12,
+        7,
+        6
+      ],
+      "eligible": true,
+      "k": 3,
+      "min_cluster_size": 6,
+      "selection_score": 0.39800388921556573,
+      "silhouette": 0.18487264992537628,
+      "stability_mean_ari": 0.7177007481508498,
+      "stability_std_ari": 0.14350598823576505
+    },
+    {
+      "cluster_sizes": [
+        12,
+        6,
+        4,
+        3
+      ],
+      "eligible": true,
+      "k": 4,
+      "min_cluster_size": 3,
+      "selection_score": 0.4532249226272088,
+      "silhouette": 0.20720310350944993,
+      "stability_mean_ari": 0.8222576513038472,
+      "stability_std_ari": 0.1279507026289571
+    },
+    {
+      "cluster_sizes": [
+        11,
+        4,
+        4,
+        3,
+        3
+      ],
+      "eligible": true,
+      "k": 5,
+      "min_cluster_size": 3,
+      "selection_score": 0.40586105233347214,
+      "silhouette": 0.19336963020604914,
+      "stability_mean_ari": 0.7245981855246066,
+      "stability_std_ari": 0.09290735130738975
+    },
+    {
+      "cluster_sizes": [
+        12,
+        6,
+        3,
+        2,
+        1,
+        1
+      ],
+      "eligible": false,
+      "k": 6,
+      "min_cluster_size": 1,
+      "selection_score": null,
+      "silhouette": 0.2241038071649789,
+      "stability_mean_ari": 0.6545740900585487,
+      "stability_std_ari": 0.17507234286621343
+    },
+    {
+      "cluster_sizes": [
+        12,
+        3,
+        3,
+        3,
+        2,
+        1,
+        1
+      ],
+      "eligible": false,
+      "k": 7,
+      "min_cluster_size": 1,
+      "selection_score": null,
+      "silhouette": 0.23130626036187885,
+      "stability_mean_ari": 0.6366072292126701,
+      "stability_std_ari": 0.20401906419314927
+    },
+    {
+      "cluster_sizes": [
+        8,
+        5,
+        3,
+        3,
+        2,
+        2,
+        1,
+        1
+      ],
+      "eligible": false,
+      "k": 8,
+      "min_cluster_size": 1,
+      "selection_score": null,
+      "silhouette": 0.16803116642227686,
+      "stability_mean_ari": 0.5189529107120471,
+      "stability_std_ari": 0.14054887128324164
+    }
+  ],
+  "caveats": [
+    "Pseudo-speakers are inferred from audio and are not verified speaker identities.",
+    "Accent clusters are unsupervised pronunciation-pattern groups, not nationality, language, or ethnicity labels.",
+    "Cluster numbers have no ordinal meaning and must not be interpreted as better or worse accents.",
+    "Sparse phones are shrunk toward corpus phone means; reliability matrices must be consulted before interpreting individuals.",
+    "Centroids are fit only on well-supported pseudo-speakers; sparse speakers receive explicitly provisional, evidence-discounted assignments.",
+    "Train and validation labels are combined only for exploratory clustering, not for model evaluation.",
+    "Unreferenced recordings inherit a cluster only when their pseudo-speaker has labeled recordings."
+  ],
+  "cluster_summaries": [
+    {
+      "accent_cluster": 0,
+      "descriptor": "ɝ more accented / aar more accented pattern",
+      "fit_speaker_count": 4,
+      "labeled_recordings": 609,
+      "mean_assignment_confidence": 0.38752141844696586,
+      "mean_phone_reliability": 0.8028356204160093,
+      "overall_accentedness": 0.21666616746153045,
+      "phone_count": 18977,
+      "provisional_speaker_count": 0,
+      "recording_count": 638,
+      "speaker_count": 4,
+      "top_distinctive_phones": [
+        {
+          "direction": "more_accented",
+          "pattern_delta": 0.2337820683517068,
+          "phone": "ɝ"
+        },
+        {
+          "direction": "more_accented",
+          "pattern_delta": 0.17101208784511593,
+          "phone": "aar"
+        },
+        {
+          "direction": "less_accented",
+          "pattern_delta": -0.15668316499674434,
+          "phone": "ɛ"
+        },
+        {
+          "direction": "less_accented",
+          "pattern_delta": -0.14667730559480713,
+          "phone": "ɹ"
+        },
+        {
+          "direction": "more_accented",
+          "pattern_delta": 0.14614529378485705,
+          "phone": "aor"
+        }
+      ]
+    },
+    {
+      "accent_cluster": 1,
+      "descriptor": "ɝ less accented / z more accented pattern",
+      "fit_speaker_count": 3,
+      "labeled_recordings": 331,
+      "mean_assignment_confidence": 0.41536732810192944,
+      "mean_phone_reliability": 0.7711088070059159,
+      "overall_accentedness": 0.2014680478717458,
+      "phone_count": 10358,
+      "provisional_speaker_count": 0,
+      "recording_count": 341,
+      "speaker_count": 3,
+      "top_distinctive_phones": [
+        {
+          "direction": "less_accented",
+          "pattern_delta": -0.16050752054257927,
+          "phone": "ɝ"
+        },
+        {
+          "direction": "more_accented",
+          "pattern_delta": 0.14250706724624726,
+          "phone": "z"
+        },
+        {
+          "direction": "more_accented",
+          "pattern_delta": 0.11869894629689016,
+          "phone": "v"
+        },
+        {
+          "direction": "less_accented",
+          "pattern_delta": -0.09226013805797198,
+          "phone": "aar"
+        },
+        {
+          "direction": "more_accented",
+          "pattern_delta": 0.08175082095491293,
+          "phone": "ɪ"
+        }
+      ]
+    },
+    {
+      "accent_cluster": 2,
+      "descriptor": "ɝ less accented / ɑ less accented pattern",
+      "fit_speaker_count": 12,
+      "labeled_recordings": 1156,
+      "mean_assignment_confidence": 0.13203337699402193,
+      "mean_phone_reliability": 0.19863329114724126,
+      "overall_accentedness": 0.14665229513031647,
+      "phone_count": 35470,
+      "provisional_speaker_count": 72,
+      "recording_count": 1194,
+      "speaker_count": 84,
+      "top_distinctive_phones": [
+        {
+          "direction": "less_accented",
+          "pattern_delta": -0.1334703899209698,
+          "phone": "ɝ"
+        },
+        {
+          "direction": "less_accented",
+          "pattern_delta": -0.05780165753926178,
+          "phone": "ɑ"
+        },
+        {
+          "direction": "less_accented",
+          "pattern_delta": -0.04543455993212828,
+          "phone": "ɹ"
+        },
+        {
+          "direction": "less_accented",
+          "pattern_delta": -0.043293794965594753,
+          "phone": "aar"
+        },
+        {
+          "direction": "more_accented",
+          "pattern_delta": 0.039091884165879755,
+          "phone": "ʊ"
+        }
+      ]
+    },
+    {
+      "accent_cluster": 3,
+      "descriptor": "ɹ more accented / ɝ more accented pattern",
+      "fit_speaker_count": 6,
+      "labeled_recordings": 803,
+      "mean_assignment_confidence": 0.38403794431044047,
+      "mean_phone_reliability": 0.7865665967588985,
+      "overall_accentedness": 0.15184057964665107,
+      "phone_count": 25434,
+      "provisional_speaker_count": 0,
+      "recording_count": 826,
+      "speaker_count": 6,
+      "top_distinctive_phones": [
+        {
+          "direction": "more_accented",
+          "pattern_delta": 0.2263212186678828,
+          "phone": "ɹ"
+        },
+        {
+          "direction": "more_accented",
+          "pattern_delta": 0.1913398278787581,
+          "phone": "ɝ"
+        },
+        {
+          "direction": "less_accented",
+          "pattern_delta": -0.142222127768302,
+          "phone": "ð"
+        },
+        {
+          "direction": "more_accented",
+          "pattern_delta": 0.13313615049330915,
+          "phone": "ɑ"
+        },
+        {
+          "direction": "less_accented",
+          "pattern_delta": -0.12320501799292308,
+          "phone": "z"
+        }
+      ]
+    }
+  ],
+  "confound_metrics": {
+    "overall_accentedness_variance_explained_by_cluster": 0.10245270836903664,
+    "recording_level_cluster_prompt_ami": -0.008388641558020058,
+    "recording_level_cluster_split_ami": -0.0003871996310595437,
+    "speaker_phone_count_vs_overall_accentedness_correlation": 0.11121142997041612,
+    "speaker_recording_count_vs_overall_accentedness_correlation": 0.11698408234454546
+  },
+  "coverage": {
+    "pseudo_speakers_provisionally_assigned": 72,
+    "pseudo_speakers_supported": 97,
+    "pseudo_speakers_total": 98,
+    "pseudo_speakers_used_for_fit": 25,
+    "recordings_assigned": 2999,
+    "recordings_labeled": 2899,
+    "recordings_total": 3000,
+    "recordings_unreferenced": 101,
+    "unsupported_pseudo_speakers": [
+      61
+    ],
+    "unsupported_recordings": [
+      "audio/utt_0278.wav"
+    ]
+  },
+  "method": {
+    "accentedness_scale": "(2 - label) / 2; 0 is native-like, 1 is strongest",
+    "algorithm": "KMeans (lloyd, 50 initializations)",
+    "candidate_k": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "cluster_id_order": "top residual phone index, direction, then full rounded residual signature; never KMeans raw IDs",
+    "common_mode_removal": "sqrt(reliability) * (posterior_minus_corpus_mean - reliability_weighted_common_shift)",
+    "input_features": "phone labels only; WavLM vectors are not clustered",
+    "minimum_cluster_size": 3,
+    "minimum_labeled_recordings_for_centroid_fit": 10,
+    "pca_components": 13,
+    "pca_explained_variance": 0.9171833017596396,
+    "pca_target_variance": 0.9,
+    "phone_count": 44,
+    "phones": [
+      "aar",
+      "aor",
+      "aɪ",
+      "aʊ",
+      "b",
+      "d",
+      "dʒ",
+      "eyr",
+      "eɪ",
+      "f",
+      "h",
+      "i",
+      "iyr",
+      "j",
+      "k",
+      "l",
+      "m",
+      "n",
+      "oʊ",
+      "p",
+      "s",
+      "t",
+      "tʃ",
+      "u",
+      "v",
+      "w",
+      "z",
+      "æ",
+      "ð",
+      "ŋ",
+      "ɑ",
+      "ɔ",
+      "ɔɪ",
+      "ɛ",
+      "ɝ",
+      "ɡ",
+      "ɪ",
+      "ɹ",
+      "ɾ",
+      "ʃ",
+      "ʊ",
+      "ʌ",
+      "ʒ",
+      "θ"
+    ],
+    "posterior_formula": "(speaker_sum + prior_strength * corpus_phone_mean) / (speaker_count + prior_strength)",
+    "prior_strength": 12.0,
+    "reliability_formula": "speaker_count / (speaker_count + prior_strength)",
+    "scaling": "per-phone StandardScaler fit on well-supported pseudo-speakers",
+    "seed": 42,
+    "selection_score": "0.60 * silhouette + 0.40 * mean resampling ARI",
+    "sparse_assignment": "nearest selected centroid after the fit-speaker scaler and PCA; confidence is distance margin multiplied by labeled-recording evidence",
+    "stability": "KMeans fit on reproducible 80% speaker subsamples, then predicted on all speakers",
+    "unit_clustered": "pseudo-speaker"
+  },
+  "quality_metrics": {
+    "mean_assignment_confidence": 0.166919783417053,
+    "mean_fit_assignment_confidence": 0.4135926762057427,
+    "mean_phone_reliability": 0.2776212880371489,
+    "mean_provisional_assignment_confidence": 0.08126947342098016,
+    "minimum_assignment_confidence": 0.03464668096179354,
+    "minimum_phone_reliability": 0.07692307692307693,
+    "selected_silhouette": 0.20720310350944993,
+    "selected_stability_mean_ari": 0.8222576513038472
+  },
+  "schema_version": "accent-pattern-clusters-v1",
+  "selected_k": 4,
+  "source_pseudo_speakers": {
+    "embedder": "microsoft/wavlm-base-plus-sv",
+    "linkage_method": "average",
+    "sha256": "aa6492c1ef3fa4f2ab686580973a10acae40ae377cee8e2ec1f5969217a7e448",
+    "similarity_threshold": 0.9196849358952407
+  }
+}

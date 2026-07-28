@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "accent-gopt-runtime"
+version = "0.1.0"
+description = "Isolated runtime for the official LibriSpeech GOPT pronunciation scorer"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "numpy>=1.24,<3",
+    "torch>=2.1,<3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<10",
+]
+
+[project.scripts]
+gopt-score = "gopt_runtime.runner:main"
+gopt-score-batch = "gopt_runtime.batch_runner:main"
+prepare-gopt-checkpoint = "gopt_runtime.prepare_checkpoint:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
