@@ -337,6 +337,7 @@ class OrdinalScorerOutput:
     cumulative_probabilities: Tensor
     raw_thresholds: Tensor
     phone_mask: Tensor
+    context: Tensor
 
 
 class ContextualOrdinalScorer(nn.Module):
@@ -368,6 +369,12 @@ class ContextualOrdinalScorer(nn.Module):
         )
         self.output_dropout = nn.Dropout(dropout)
         self.ordinal_head = nn.Linear(2 * gru_hidden_size, 2)
+
+    @property
+    def context_size(self) -> int:
+        """Width of the shared contextual phone representation."""
+
+        return 2 * self.bigru.hidden_size
 
     def forward(
         self,
@@ -465,11 +472,13 @@ class ContextualOrdinalScorer(nn.Module):
         )
         raw_thresholds = raw_thresholds.masked_fill(~phone_mask[:, :, None], 0.0)
         scores = scores.masked_fill(~phone_mask, 0.0)
+        context = context.masked_fill(~phone_mask[:, :, None], 0.0)
         return OrdinalScorerOutput(
             scores=scores,
             cumulative_probabilities=cumulative_probabilities,
             raw_thresholds=raw_thresholds,
             phone_mask=phone_mask,
+            context=context,
         )
 
 

@@ -90,6 +90,44 @@ The completed, self-contained inference artifact is written to `model/`.
 Intermediate runs and checkpoints are disposable and are excluded by the
 repository `.gitignore`.
 
+### Train-only auxiliary labels
+
+The scorer can also regularize its shared BiGRU representation with two
+utterance-level targets: mean accent severity and one of four anonymous
+pronunciation patterns. The auxiliary heads exist only while training and are
+discarded before checkpointing, so the inference format and API do not change.
+
+Run the matched baseline-versus-auxiliary experiment with a pseudo-speaker-
+disjoint model-selection split:
+
+```bash
+PYTORCH_ENABLE_MPS_FALLBACK=1 HF_HUB_OFFLINE=1 uv run python train.py \
+  --data-dir ../data/dataset \
+  --output-dir runs/auxiliary-speaker-s42 \
+  --device auto \
+  --seed 42 \
+  --speaker-clusters ../data/speaker_clusters/clusters.json \
+  --selection-split speaker \
+  --aux-severity-weight 0.05 \
+  --aux-pattern-weight 0.10 \
+  --aux-pattern-clusters 4 \
+  --joint-epochs 0
+```
+
+Targets are regenerated separately from each allowed fitting partition. The
+code reads the audio-derived pseudo-speaker map, but never reads
+`data/accent_clusters/` because that analysis includes validation labels. Sparse
+voices do not receive a pattern loss, and the speaker profile used to assign an
+eligible utterance leaves out that utterance's labels. Pattern centroids still
+use full fit-partition speaker aggregates, so this is stage-local supervision,
+not full record-level cross-fitting. `model_selection.json` reports the target
+hashes, baseline and candidate metrics, and the paired bootstrap. The auxiliary
+arm is selected only when its balanced-MAE confidence interval is wholly better
+than the matched baseline with no significant secondary-metric regression.
+
+The first seed-42 result and its decision are recorded in
+[`../data/auxiliary_training/report.md`](../data/auxiliary_training/report.md).
+
 ## Inference
 
 The required public interface is:

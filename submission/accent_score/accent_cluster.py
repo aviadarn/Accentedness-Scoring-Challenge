@@ -430,18 +430,25 @@ def cluster_speaker_profiles(
     *,
     seed: int = DEFAULT_SEED,
     max_k: int = DEFAULT_MAX_K,
+    fixed_k: int | None = None,
     stability_repeats: int = DEFAULT_STABILITY_REPEATS,
     pca_variance: float = DEFAULT_PCA_VARIANCE,
     min_cluster_size: int | None = None,
     min_labeled_recordings_for_fit: int = DEFAULT_MIN_LABELED_RECORDINGS_FOR_FIT,
 ) -> AccentClusterResult:
-    """Fit on well-supported profiles, then provisionally assign sparse ones."""
+    """Fit on well-supported profiles, then provisionally assign sparse ones.
+
+    When ``fixed_k`` is supplied, only that exact cluster count is evaluated;
+    it must still satisfy the same minimum-cluster-size safety gate.
+    """
 
     n_all = len(profiles.speaker_clusters)
     if type(seed) is not int:
         raise AccentClusterError("seed must be an integer")
     if type(max_k) is not int or max_k < 2:
         raise AccentClusterError("max_k must be an integer of at least 2")
+    if fixed_k is not None and (type(fixed_k) is not int or fixed_k < 2):
+        raise AccentClusterError("fixed_k must be None or an integer of at least 2")
     if type(stability_repeats) is not int or stability_repeats < 2:
         raise AccentClusterError("stability_repeats must be at least 2")
     if not 0.5 <= pca_variance <= 1.0:
@@ -492,9 +499,21 @@ def cluster_speaker_profiles(
     explained = float(np.sum(pca.explained_variance_ratio_))
 
     upper = min(max_k, n - 1)
+    if fixed_k is not None and fixed_k >= n:
+        raise AccentClusterError(
+            f"{n} fit speakers cannot form {fixed_k} non-singleton candidate clusters"
+        )
+    if fixed_k is None:
+        candidate_ks: Sequence[int] = range(2, upper + 1)
+    else:
+        if len(np.unique(np.round(transformed_fit, 12), axis=0)) < fixed_k:
+            raise AccentClusterError(
+                f"fit speakers have fewer than {fixed_k} distinct profiles"
+            )
+        candidate_ks = (fixed_k,)
     candidates: list[CandidateResult] = []
     fitted: dict[int, tuple[KMeans, NDArray[np.int64]]] = {}
-    for k in range(2, upper + 1):
+    for k in candidate_ks:
         model = KMeans(
             n_clusters=k,
             random_state=seed,
@@ -529,6 +548,12 @@ def cluster_speaker_profiles(
 
     eligible_candidates = [candidate for candidate in candidates if candidate.eligible]
     if not eligible_candidates:
+        if fixed_k is not None:
+            candidate = candidates[0]
+            raise AccentClusterError(
+                f"fixed k={fixed_k} produced a cluster of "
+                f"{candidate.min_cluster_size} speakers; need at least {required}"
+            )
         raise AccentClusterError(
             f"no k in 2..{upper} produced clusters with at least {required} speakers"
         )

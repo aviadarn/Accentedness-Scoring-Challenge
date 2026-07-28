@@ -146,6 +146,10 @@ def test_contextual_scorer_orders_probabilities_and_bounds_scores() -> None:
     assert (q1[valid] >= q2[valid]).all()
     assert ((output.scores[valid] >= 0) & (output.scores[valid] <= 100)).all()
     assert torch.equal(output.scores[~valid], torch.zeros_like(output.scores[~valid]))
+    assert output.context.shape == (2, 4, scorer.context_size)
+    assert torch.equal(
+        output.context[~valid], torch.zeros_like(output.context[~valid])
+    )
 
     loss = ordinal_bce_loss(
         output.cumulative_probabilities,
@@ -218,4 +222,3 @@ def test_full_model_has_45_way_ctc_head_and_offline_checkpoint_round_trip(
     assert restored.ctc_head.out_features == 45
     for name, expected in model.state_dict().items():
         torch.testing.assert_close(restored.state_dict()[name], expected)
-

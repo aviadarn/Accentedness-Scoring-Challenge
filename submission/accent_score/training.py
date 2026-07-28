@@ -31,6 +31,8 @@ import torch
 from torch import Tensor, nn
 
 from .audio import DurationBatchSampler, WhisperAudioCollator, audio_durations
+from .auxiliary_labels import AuxiliaryLabelSet, build_auxiliary_labels
+from .auxiliary_loss import AuxiliaryMultitaskLoss
 from .data import (
     EXPECTED_MANIFEST_SHA256,
     EXPECTED_MANIFEST_STATS,
@@ -58,6 +60,7 @@ from .model import (
     ordinal_bce_loss,
     save_checkpoint,
 )
+from .speaker_split import split_by_speaker
 
 
 LOGGER = logging.getLogger(__name__)
@@ -91,6 +94,12 @@ class TrainingConfig:
     scorer_patience: int = 5
     joint_epochs: int = 5
     joint_ctc_weight: float = 0.2
+    auxiliary_severity_weight: float = 0.0
+    auxiliary_pattern_weight: float = 0.0
+    auxiliary_pattern_clusters: int = 4
+    auxiliary_min_speaker_records: int = 10
+    speaker_clusters_path: Path | None = None
+    selection_split: str = "prompt"
     bootstrap_samples: int = 10_000
     quick: bool = False
     quick_fit_records: int = 24
@@ -100,6 +109,8 @@ class TrainingConfig:
     def __post_init__(self) -> None:
         self.data_dir = Path(self.data_dir)
         self.output_dir = Path(self.output_dir)
+        if self.speaker_clusters_path is not None:
+            self.speaker_clusters_path = Path(self.speaker_clusters_path)
         if self.seed < 0:
             raise ValueError("seed must be non-negative")
         if self.max_batch_seconds <= 0 or self.max_batch_size < 1:
@@ -116,6 +127,36 @@ class TrainingConfig:
             raise ValueError("scorer_batch_size and bootstrap_samples must be positive")
         if not 0.0 <= self.joint_ctc_weight:
             raise ValueError("joint_ctc_weight must be non-negative")
+        for name, value in (
+            ("auxiliary_severity_weight", self.auxiliary_severity_weight),
+            ("auxiliary_pattern_weight", self.auxiliary_pattern_weight),
+        ):
+            if not math.isfinite(value) or value < 0.0:
+                raise ValueError(f"{name} must be finite and non-negative")
+        if self.auxiliary_pattern_clusters < 2:
+            raise ValueError("auxiliary_pattern_clusters must be at least 2")
+        if self.auxiliary_min_speaker_records < 2:
+            raise ValueError("auxiliary_min_speaker_records must be at least 2")
+        if self.selection_split not in {"prompt", "speaker"}:
+            raise ValueError("selection_split must be 'prompt' or 'speaker'")
+        if (
+            self.auxiliary_enabled or self.selection_split == "speaker"
+        ) and self.speaker_clusters_path is None:
+            raise ValueError(
+                "speaker_clusters_path is required for auxiliary supervision or "
+                "a speaker-disjoint selection split"
+            )
+        if self.auxiliary_enabled and self.joint_epochs:
+            raise ValueError(
+                "joint_epochs must be 0 when auxiliary supervision is enabled"
+            )
+
+    @property
+    def auxiliary_enabled(self) -> bool:
+        return (
+            self.auxiliary_severity_weight > 0.0
+            or self.auxiliary_pattern_weight > 0.0
+        )
 
     def effective(self) -> "TrainingConfig":
         """Return the bounded smoke configuration selected by ``--quick``."""
@@ -782,13 +823,29 @@ def train_scorer_with_selection(
     class_weights: Tensor,
     *,
     zero_features: bool = False,
+    auxiliary_labels: AuxiliaryLabelSet | None = None,
 ) -> ScorerTrainingResult:
     """Train the ordinal BiGRU and select an epoch by dev balanced MAE."""
 
     for parameter in scorer.parameters():
         parameter.requires_grad_(True)
+    parameter_groups: list[dict[str, Any]] = [
+        {"params": list(scorer.parameters()), "lr": config.scorer_lr}
+    ]
+    auxiliary: AuxiliaryMultitaskLoss | None = None
+    if auxiliary_labels is not None:
+        auxiliary = AuxiliaryMultitaskLoss(
+            scorer.context_size,
+            auxiliary_labels,
+            severity_loss_weight=config.auxiliary_severity_weight,
+            pattern_loss_weight=config.auxiliary_pattern_weight,
+            seed=config.seed + 17,
+        ).to(device)
+        parameter_groups.append(
+            {"params": list(auxiliary.optimizer_parameters()), "lr": config.scorer_lr}
+        )
     optimizer, scheduler = _optimizer_scheduler(
-        [{"params": list(scorer.parameters()), "lr": config.scorer_lr}],
+        parameter_groups,
         weight_decay=config.weight_decay,
         total_steps=max(
             1,
@@ -805,8 +862,14 @@ def train_scorer_with_selection(
     best_scores: NDArray[np.float64] | None = None
     for epoch in range(config.max_scorer_epochs):
         scorer.train()
+        if auxiliary is not None:
+            auxiliary.train()
         total_loss = 0.0
         total_phones = 0
+        auxiliary_total = 0.0
+        severity_total = 0.0
+        pattern_total = 0.0
+        auxiliary_records = 0
         for examples in _cached_batches(
             fit_cache,
             batch_size=config.scorer_batch_size,
@@ -819,20 +882,37 @@ def train_scorer_with_selection(
             )
             optimizer.zero_grad(set_to_none=True)
             output = scorer(features, phone_ids, lengths)
-            loss = ordinal_bce_loss(
+            ordinal_loss = ordinal_bce_loss(
                 output.cumulative_probabilities,
                 labels,
                 phone_mask=mask,
                 class_weights=weights,
             )
+            if auxiliary is None:
+                loss = ordinal_loss
+            else:
+                parts = auxiliary(
+                    output.context,
+                    output.phone_mask,
+                    [example.record for example in examples],
+                )
+                loss = ordinal_loss + parts.total
+                batch_records = len(examples)
+                auxiliary_total += float(parts.total.detach().cpu()) * batch_records
+                severity_total += float(parts.severity.detach().cpu()) * batch_records
+                pattern_total += float(parts.pattern.detach().cpu()) * batch_records
+                auxiliary_records += batch_records
             if not torch.isfinite(loss).item():
                 raise FloatingPointError(f"non-finite ordinal loss at epoch {epoch + 1}")
             loss.backward()
-            nn.utils.clip_grad_norm_(scorer.parameters(), config.gradient_clip)
+            clipped_parameters = list(scorer.parameters())
+            if auxiliary is not None:
+                clipped_parameters.extend(auxiliary.optimizer_parameters())
+            nn.utils.clip_grad_norm_(clipped_parameters, config.gradient_clip)
             optimizer.step()
             scheduler.step()
             count = int(mask.sum().item())
-            total_loss += float(loss.detach().cpu()) * count
+            total_loss += float(ordinal_loss.detach().cpu()) * count
             total_phones += count
         prediction = predict_cached_scorer(
             scorer,
@@ -843,15 +923,25 @@ def train_scorer_with_selection(
         )
         metrics = compute_metrics(prediction.labels, prediction.scores)
         balanced_mae = float(metrics["balanced_mae"])
-        history.append(
-            {
-                "epoch": epoch + 1,
-                "train_ordinal_loss": total_loss / max(total_phones, 1),
-                "dev_balanced_mae": balanced_mae,
-                "dev_mae": float(metrics["mae"]),
-                "dev_qwk": float(metrics["qwk"]),
-            }
-        )
+        history_row: dict[str, float | int] = {
+            "epoch": epoch + 1,
+            "train_ordinal_loss": total_loss / max(total_phones, 1),
+            "dev_balanced_mae": balanced_mae,
+            "dev_mae": float(metrics["mae"]),
+            "dev_qwk": float(metrics["qwk"]),
+        }
+        if auxiliary is not None:
+            history_row.update(
+                {
+                    "train_auxiliary_loss": auxiliary_total
+                    / max(auxiliary_records, 1),
+                    "train_auxiliary_severity_loss": severity_total
+                    / max(auxiliary_records, 1),
+                    "train_auxiliary_pattern_loss": pattern_total
+                    / max(auxiliary_records, 1),
+                }
+            )
+        history.append(history_row)
         LOGGER.info(
             "%s scorer epoch %d/%d: loss=%.5f dev_balanced_MAE=%.4f",
             "sequence-only" if zero_features else "acoustic",
@@ -890,13 +980,29 @@ def train_scorer_fixed(
     *,
     epochs: int,
     zero_features: bool = False,
+    auxiliary_labels: AuxiliaryLabelSet | None = None,
 ) -> list[dict[str, float | int]]:
     if epochs < 1:
         raise ValueError("fixed scorer retraining requires at least one epoch")
     for parameter in scorer.parameters():
         parameter.requires_grad_(True)
+    parameter_groups: list[dict[str, Any]] = [
+        {"params": list(scorer.parameters()), "lr": config.scorer_lr}
+    ]
+    auxiliary: AuxiliaryMultitaskLoss | None = None
+    if auxiliary_labels is not None:
+        auxiliary = AuxiliaryMultitaskLoss(
+            scorer.context_size,
+            auxiliary_labels,
+            severity_loss_weight=config.auxiliary_severity_weight,
+            pattern_loss_weight=config.auxiliary_pattern_weight,
+            seed=config.seed + 17,
+        ).to(device)
+        parameter_groups.append(
+            {"params": list(auxiliary.optimizer_parameters()), "lr": config.scorer_lr}
+        )
     optimizer, scheduler = _optimizer_scheduler(
-        [{"params": list(scorer.parameters()), "lr": config.scorer_lr}],
+        parameter_groups,
         weight_decay=config.weight_decay,
         total_steps=max(1, math.ceil(len(cache) / config.scorer_batch_size) * epochs),
     )
@@ -904,8 +1010,14 @@ def train_scorer_fixed(
     history: list[dict[str, float | int]] = []
     for epoch in range(epochs):
         scorer.train()
+        if auxiliary is not None:
+            auxiliary.train()
         total_loss = 0.0
         total_phones = 0
+        auxiliary_total = 0.0
+        severity_total = 0.0
+        pattern_total = 0.0
+        auxiliary_records = 0
         for examples in _cached_batches(
             cache,
             batch_size=config.scorer_batch_size,
@@ -918,25 +1030,56 @@ def train_scorer_fixed(
             )
             optimizer.zero_grad(set_to_none=True)
             output = scorer(features, phone_ids, lengths)
-            loss = ordinal_bce_loss(
+            ordinal_loss = ordinal_bce_loss(
                 output.cumulative_probabilities,
                 labels,
                 phone_mask=mask,
                 class_weights=weights,
             )
+            if auxiliary is None:
+                loss = ordinal_loss
+            else:
+                parts = auxiliary(
+                    output.context,
+                    output.phone_mask,
+                    [example.record for example in examples],
+                )
+                loss = ordinal_loss + parts.total
+                batch_records = len(examples)
+                auxiliary_total += float(parts.total.detach().cpu()) * batch_records
+                severity_total += float(parts.severity.detach().cpu()) * batch_records
+                pattern_total += float(parts.pattern.detach().cpu()) * batch_records
+                auxiliary_records += batch_records
+            if not torch.isfinite(loss).item():
+                raise FloatingPointError(
+                    f"non-finite scorer loss at fixed epoch {epoch + 1}"
+                )
             loss.backward()
-            nn.utils.clip_grad_norm_(scorer.parameters(), config.gradient_clip)
+            clipped_parameters = list(scorer.parameters())
+            if auxiliary is not None:
+                clipped_parameters.extend(auxiliary.optimizer_parameters())
+            nn.utils.clip_grad_norm_(clipped_parameters, config.gradient_clip)
             optimizer.step()
             scheduler.step()
             count = int(mask.sum().item())
-            total_loss += float(loss.detach().cpu()) * count
+            total_loss += float(ordinal_loss.detach().cpu()) * count
             total_phones += count
-        history.append(
-            {
-                "epoch": epoch + 1,
-                "train_ordinal_loss": total_loss / max(total_phones, 1),
-            }
-        )
+        history_row: dict[str, float | int] = {
+            "epoch": epoch + 1,
+            "train_ordinal_loss": total_loss / max(total_phones, 1),
+        }
+        if auxiliary is not None:
+            history_row.update(
+                {
+                    "train_auxiliary_loss": auxiliary_total
+                    / max(auxiliary_records, 1),
+                    "train_auxiliary_severity_loss": severity_total
+                    / max(auxiliary_records, 1),
+                    "train_auxiliary_pattern_loss": pattern_total
+                    / max(auxiliary_records, 1),
+                }
+            )
+        history.append(history_row)
     return history
 
 
@@ -1316,6 +1459,82 @@ def _manifest_records(
     )
 
 
+def _load_speaker_cluster_map(path: Path) -> dict[str, int]:
+    """Load the audio-only pseudo-speaker map without opening label manifests."""
+
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"could not read speaker clusters from {path}: {error}") from error
+    rows = payload.get("recordings") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        raise ValueError("speaker clusters must contain a recordings array")
+    mapping: dict[str, int] = {}
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            raise ValueError(f"speaker recording {index} must be an object")
+        key = row.get("audio_path")
+        cluster = row.get("cluster")
+        if not isinstance(key, str) or not key or key.startswith("/") or ".." in Path(key).parts:
+            raise ValueError(f"speaker recording {index} has an unsafe audio_path")
+        if type(cluster) is not int or cluster < 0:
+            raise ValueError(f"speaker recording {index} has an invalid cluster")
+        if key in mapping:
+            raise ValueError(f"duplicate recording in speaker clusters: {key}")
+        mapping[key] = cluster
+    return mapping
+
+
+def _phone_speaker_groups(
+    records: Sequence[PhoneRecord], clusters: Mapping[str, int]
+) -> tuple[int, ...]:
+    """Repeat each record's pseudo-speaker ID once per scored phone."""
+
+    groups: list[int] = []
+    for record in records:
+        cluster: int | None = None
+        parts = record.audio_path.parts
+        for start in range(len(parts) - 1, -1, -1):
+            candidate = "/".join(parts[start:])
+            if candidate in clusters:
+                cluster = clusters[candidate]
+                break
+        if cluster is None:
+            raise ValueError(f"no pseudo-speaker for {record.audio_path}")
+        groups.extend([cluster] * record.num_phones)
+    return tuple(groups)
+
+
+def _build_auxiliary_label_set(
+    records: Sequence[PhoneRecord], config: TrainingConfig
+) -> AuxiliaryLabelSet:
+    """Fit auxiliary targets from exactly one allowed training partition."""
+
+    if not config.auxiliary_enabled:
+        raise ValueError("auxiliary labels requested while both loss weights are zero")
+    if config.speaker_clusters_path is None:
+        raise ValueError("speaker_clusters_path is required for auxiliary labels")
+    return build_auxiliary_labels(
+        records,
+        dataset_root=config.data_dir,
+        speaker_clusters_path=config.speaker_clusters_path,
+        fixed_k=config.auxiliary_pattern_clusters,
+        min_train_recordings_for_pattern=config.auxiliary_min_speaker_records,
+        seed=config.seed,
+    )
+
+
+def _auxiliary_label_summary(labels: AuxiliaryLabelSet) -> dict[str, Any]:
+    """Report reproducibility metadata without serializing voice-level targets."""
+
+    return {
+        "num_patterns": labels.num_patterns,
+        "targets_sha256": labels.targets_sha256,
+        "bundle_sha256": labels.bundle_sha256,
+        "provenance": labels.provenance,
+    }
+
+
 def _load_pretrained(config: TrainingConfig, device: torch.device) -> tuple[AccentScoringModel, Any]:
     from transformers import WhisperFeatureExtractor
 
@@ -1352,13 +1571,34 @@ def run_training(raw_config: TrainingConfig) -> dict[str, Any]:
     train_records = _manifest_records(
         train_manifest, root=config.data_dir, split="train", config=config
     )
-    fit_records, dev_records = split_train_dev(
-        train_records, verify_expected_counts=config.verify_snapshot
-    )
+    speaker_map: dict[str, int] | None = None
+    if config.selection_split == "prompt":
+        fit_records, dev_records = split_train_dev(
+            train_records, verify_expected_counts=config.verify_snapshot
+        )
+        selection_split_report: dict[str, Any] = {
+            "kind": "prompt_disjoint",
+            "fit_utterances": len(fit_records),
+            "dev_utterances": len(dev_records),
+        }
+    else:
+        assert config.speaker_clusters_path is not None
+        speaker_map = _load_speaker_cluster_map(config.speaker_clusters_path)
+        speaker_split = split_by_speaker(train_records, clusters=speaker_map)
+        fit_records, dev_records = speaker_split.fit, speaker_split.dev
+        selection_split_report = {
+            "kind": "pseudo_speaker_disjoint",
+            **speaker_split.summary(),
+            "speaker_clusters_sha256": sha256_file(config.speaker_clusters_path),
+        }
     if config.quick:
         fit_records = fit_records[: config.quick_fit_records]
         dev_records = dev_records[: config.quick_dev_records]
         train_for_final = fit_records + dev_records
+        selection_split_report["quick_truncation"] = {
+            "fit_utterances": len(fit_records),
+            "dev_utterances": len(dev_records),
+        }
     else:
         train_for_final = train_records
 
@@ -1376,7 +1616,12 @@ def run_training(raw_config: TrainingConfig) -> dict[str, Any]:
     model.scorer.to(scorer_device)
     fit_labels = (label for record in fit_records for label in record.labels)
     class_weights = inverse_sqrt_class_weights(fit_labels)
-    scorer_selection = train_scorer_with_selection(
+    initial_scorer_state = _clone_state(model.scorer)
+    if config.auxiliary_enabled:
+        # Both arms share initialization, cache, batch order, dropout seed, and
+        # optimizer schedule. Only the declared auxiliary objective differs.
+        seed_everything(config.seed + 101)
+    baseline_scorer_selection = train_scorer_with_selection(
         model.scorer,
         fit_cache,
         dev_cache,
@@ -1384,15 +1629,121 @@ def run_training(raw_config: TrainingConfig) -> dict[str, Any]:
         config,
         class_weights,
     )
-    frozen_prediction = predict_cached_scorer(
+    baseline_scorer_state = _clone_state(model.scorer)
+    baseline_scorer_prediction = predict_cached_scorer(
         model.scorer,
         dev_cache,
         scorer_device,
         batch_size=config.scorer_batch_size,
     )
-    frozen_metrics = compute_metrics(
-        frozen_prediction.labels, frozen_prediction.scores
+    baseline_scorer_metrics = compute_metrics(
+        baseline_scorer_prediction.labels, baseline_scorer_prediction.scores
     )
+
+    auxiliary_fit_labels: AuxiliaryLabelSet | None = None
+    auxiliary_scorer_selection: ScorerTrainingResult | None = None
+    auxiliary_scorer_prediction: PredictionResult | None = None
+    auxiliary_scorer_metrics: dict[str, Any] | None = None
+    auxiliary_selected = False
+    scorer_comparison: dict[str, Any] | None = None
+    if config.auxiliary_enabled:
+        auxiliary_fit_labels = _build_auxiliary_label_set(fit_records, config)
+        model.scorer.load_state_dict(initial_scorer_state)
+        seed_everything(config.seed + 101)
+        auxiliary_scorer_selection = train_scorer_with_selection(
+            model.scorer,
+            fit_cache,
+            dev_cache,
+            scorer_device,
+            config,
+            class_weights,
+            auxiliary_labels=auxiliary_fit_labels,
+        )
+        auxiliary_scorer_prediction = predict_cached_scorer(
+            model.scorer,
+            dev_cache,
+            scorer_device,
+            batch_size=config.scorer_batch_size,
+        )
+        auxiliary_scorer_metrics = compute_metrics(
+            auxiliary_scorer_prediction.labels,
+            auxiliary_scorer_prediction.scores,
+        )
+        comparison_groups: Sequence[Any]
+        if speaker_map is not None:
+            comparison_groups = _phone_speaker_groups(dev_records, speaker_map)
+            bootstrap_grouping = "pseudo_speaker"
+        else:
+            comparison_groups = baseline_scorer_prediction.utterance_ids
+            bootstrap_grouping = "utterance"
+        comparison_deltas = paired_bootstrap_deltas(
+            baseline_scorer_prediction.labels,
+            auxiliary_scorer_prediction.scores,
+            baseline_scorer_prediction.scores,
+            comparison_groups,
+            n_bootstrap=config.bootstrap_samples,
+            seed=config.seed,
+            metric_names=(
+                "balanced_mae",
+                "mae",
+                "qwk",
+                "macro_f1",
+                "balanced_accuracy",
+                "spearman",
+                "class_mae_0",
+                "class_mae_1",
+                "class_mae_2",
+            ),
+        )
+        primary_reliable_improvement = float(
+            comparison_deltas["balanced_mae"]["ci_high"]
+        ) < 0.0
+        error_secondaries = ("mae", "class_mae_0", "class_mae_1", "class_mae_2")
+        agreement_secondaries = (
+            "qwk",
+            "macro_f1",
+            "balanced_accuracy",
+            "spearman",
+        )
+        no_significant_secondary_regression = not any(
+            float(comparison_deltas[name]["ci_low"]) > 0.0
+            for name in error_secondaries
+        ) and not any(
+            float(comparison_deltas[name]["ci_high"]) < 0.0
+            for name in agreement_secondaries
+        )
+        auxiliary_selected = (
+            primary_reliable_improvement and no_significant_secondary_regression
+        )
+        scorer_comparison = {
+            "selected": "auxiliary" if auxiliary_selected else "baseline",
+            "selection_rule": (
+                "balanced_mae paired-bootstrap CI must be wholly below zero, "
+                "with no significant secondary regression"
+            ),
+            "bootstrap_grouping": bootstrap_grouping,
+            "primary_reliable_improvement": primary_reliable_improvement,
+            "no_significant_secondary_regression": (
+                no_significant_secondary_regression
+            ),
+            "baseline_metrics": baseline_scorer_metrics,
+            "auxiliary_metrics": auxiliary_scorer_metrics,
+            "candidate_minus_baseline": comparison_deltas,
+            "fit_labels": _auxiliary_label_summary(auxiliary_fit_labels),
+        }
+        if auxiliary_selected:
+            scorer_selection = auxiliary_scorer_selection
+            frozen_prediction = auxiliary_scorer_prediction
+            frozen_metrics = auxiliary_scorer_metrics
+        else:
+            model.scorer.load_state_dict(baseline_scorer_state)
+            scorer_selection = baseline_scorer_selection
+            frozen_prediction = baseline_scorer_prediction
+            frozen_metrics = baseline_scorer_metrics
+    else:
+        scorer_selection = baseline_scorer_selection
+        frozen_prediction = baseline_scorer_prediction
+        frozen_metrics = baseline_scorer_metrics
 
     seed_everything(config.seed + 1)
     sequence_scorer = _new_sequence_scorer(model, scorer_device)
@@ -1437,9 +1788,17 @@ def run_training(raw_config: TrainingConfig) -> dict[str, Any]:
     selected_dev_scores = joint_scores if joint_selected else frozen_prediction.scores
     selected_dev_metrics = compute_metrics(frozen_prediction.labels, selected_dev_scores)
     internal_report = {
-        "selected_candidate": "joint" if joint_selected else "frozen_features",
+        "selected_candidate": (
+            "joint"
+            if joint_selected
+            else "auxiliary_frozen_features"
+            if auxiliary_selected
+            else "baseline_frozen_features"
+        ),
+        "selection_split": selection_split_report,
         "selected_metrics": selected_dev_metrics,
         "frozen_metrics": frozen_metrics,
+        "auxiliary_ab_test": scorer_comparison,
         "baselines": baseline_metrics,
         "alignment_fallbacks": {"fit": fit_fallbacks, "dev": dev_fallbacks},
         "acoustic_vs_sequence_paired_bootstrap": paired_bootstrap_deltas(
@@ -1454,6 +1813,13 @@ def run_training(raw_config: TrainingConfig) -> dict[str, Any]:
     selection = {
         "ctc_epochs": ctc_selection.best_epoch,
         "scorer_epochs": scorer_selection.best_epoch,
+        "baseline_scorer_epochs": baseline_scorer_selection.best_epoch,
+        "auxiliary_scorer_epochs": (
+            auxiliary_scorer_selection.best_epoch
+            if auxiliary_scorer_selection is not None
+            else 0
+        ),
+        "auxiliary_selected": auxiliary_selected,
         "sequence_scorer_epochs": sequence_selection.best_epoch,
         "joint_epochs": joint_epoch if joint_selected else 0,
         "joint_selected": joint_selected,
@@ -1486,14 +1852,41 @@ def run_training(raw_config: TrainingConfig) -> dict[str, Any]:
     final_weights = inverse_sqrt_class_weights(
         label for record in train_for_final for label in record.labels
     )
-    final_scorer_history = train_scorer_fixed(
-        final_model.scorer,
-        final_train_cache,
-        scorer_device,
-        config,
-        final_weights,
-        epochs=scorer_selection.best_epoch,
-    )
+    final_baseline_scorer: ContextualOrdinalScorer | None = None
+    final_baseline_scorer_history: list[dict[str, float | int]] | None = None
+    auxiliary_final_labels: AuxiliaryLabelSet | None = None
+    if auxiliary_selected:
+        assert auxiliary_scorer_selection is not None
+        final_baseline_scorer = copy.deepcopy(final_model.scorer).to(scorer_device)
+        seed_everything(config.seed + 101)
+        final_baseline_scorer_history = train_scorer_fixed(
+            final_baseline_scorer,
+            final_train_cache,
+            scorer_device,
+            config,
+            final_weights,
+            epochs=baseline_scorer_selection.best_epoch,
+        )
+        auxiliary_final_labels = _build_auxiliary_label_set(train_for_final, config)
+        seed_everything(config.seed + 101)
+        final_scorer_history = train_scorer_fixed(
+            final_model.scorer,
+            final_train_cache,
+            scorer_device,
+            config,
+            final_weights,
+            epochs=auxiliary_scorer_selection.best_epoch,
+            auxiliary_labels=auxiliary_final_labels,
+        )
+    else:
+        final_scorer_history = train_scorer_fixed(
+            final_model.scorer,
+            final_train_cache,
+            scorer_device,
+            config,
+            final_weights,
+            epochs=baseline_scorer_selection.best_epoch,
+        )
     seed_everything(config.seed + 1)
     final_sequence_scorer = _new_sequence_scorer(final_model, scorer_device)
     final_sequence_history = train_scorer_fixed(
@@ -1541,6 +1934,16 @@ def run_training(raw_config: TrainingConfig) -> dict[str, Any]:
         scorer_device,
         batch_size=config.scorer_batch_size,
     )
+    final_baseline_prediction = (
+        predict_cached_scorer(
+            final_baseline_scorer,
+            validation_cache,
+            scorer_device,
+            batch_size=config.scorer_batch_size,
+        )
+        if final_baseline_scorer is not None
+        else None
+    )
     final_sequence_prediction = predict_cached_scorer(
         final_sequence_scorer,
         validation_cache,
@@ -1553,6 +1956,41 @@ def run_training(raw_config: TrainingConfig) -> dict[str, Any]:
     )
     validation_metrics = compute_metrics(
         final_prediction.labels, final_prediction.scores
+    )
+    final_auxiliary_comparison = (
+        {
+            "baseline_metrics": compute_metrics(
+                final_baseline_prediction.labels,
+                final_baseline_prediction.scores,
+            ),
+            "auxiliary_metrics": validation_metrics,
+            "candidate_minus_baseline": paired_bootstrap_deltas(
+                final_prediction.labels,
+                final_prediction.scores,
+                final_baseline_prediction.scores,
+                final_prediction.utterance_ids,
+                n_bootstrap=config.bootstrap_samples,
+                seed=config.seed,
+                metric_names=(
+                    "balanced_mae",
+                    "mae",
+                    "qwk",
+                    "macro_f1",
+                    "balanced_accuracy",
+                    "spearman",
+                    "class_mae_0",
+                    "class_mae_1",
+                    "class_mae_2",
+                ),
+            ),
+            "final_train_labels": (
+                _auxiliary_label_summary(auxiliary_final_labels)
+                if auxiliary_final_labels is not None
+                else None
+            ),
+        }
+        if final_baseline_prediction is not None
+        else None
     )
     static_baseline_names = (
         "constant_100",
@@ -1568,6 +2006,7 @@ def run_training(raw_config: TrainingConfig) -> dict[str, Any]:
     )
     validation_report = {
         "metrics": validation_metrics,
+        "auxiliary_ab_test": final_auxiliary_comparison,
         "bootstrap_intervals": bootstrap_metric_intervals(
             final_prediction.labels,
             final_prediction.scores,
@@ -1606,6 +2045,24 @@ def run_training(raw_config: TrainingConfig) -> dict[str, Any]:
                 float(validation_metrics["balanced_mae"]) < 27.78
                 and float(validation_metrics["qwk"]) > 0.281
             ),
+            "auxiliary_directional_replication": bool(
+                final_auxiliary_comparison is not None
+                and float(
+                    final_auxiliary_comparison["candidate_minus_baseline"][
+                        "balanced_mae"
+                    ]["estimate"]
+                )
+                < 0.0
+            ),
+            "auxiliary_strong_replication": bool(
+                final_auxiliary_comparison is not None
+                and float(
+                    final_auxiliary_comparison["candidate_minus_baseline"][
+                        "balanced_mae"
+                    ]["ci_high"]
+                )
+                <= 0.0
+            ),
         },
     }
 
@@ -1618,12 +2075,19 @@ def run_training(raw_config: TrainingConfig) -> dict[str, Any]:
         "model_selection": {
             "ctc": ctc_selection.history,
             "scorer": scorer_selection.history,
+            "baseline_scorer": baseline_scorer_selection.history,
+            "auxiliary_scorer": (
+                auxiliary_scorer_selection.history
+                if auxiliary_scorer_selection is not None
+                else None
+            ),
             "sequence_scorer": sequence_selection.history,
             "joint": joint_history,
         },
         "final_retrain": {
             "ctc": final_ctc_history,
             "scorer": final_scorer_history,
+            "baseline_scorer": final_baseline_scorer_history,
             "sequence_scorer": final_sequence_history,
             "joint": final_joint_history,
         },
@@ -1638,6 +2102,12 @@ def run_training(raw_config: TrainingConfig) -> dict[str, Any]:
         "seed": config.seed,
         "device": str(device),
         "scorer_device": str(scorer_device),
+        "selection_split": selection_split_report,
+        "speaker_clusters_sha256": (
+            sha256_file(config.speaker_clusters_path)
+            if config.speaker_clusters_path is not None
+            else None
+        ),
         "python": sys.version,
         "platform": platform.platform(),
         "packages": _package_versions(),
@@ -1679,6 +2149,31 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--ctc-epochs", type=int, default=12)
     parser.add_argument("--scorer-epochs", type=int, default=30)
     parser.add_argument("--joint-epochs", type=int, default=5)
+    parser.add_argument(
+        "--aux-severity-weight",
+        type=float,
+        default=0.0,
+        help="training-only utterance-severity loss weight",
+    )
+    parser.add_argument(
+        "--aux-pattern-weight",
+        type=float,
+        default=0.0,
+        help="training-only pronunciation-pattern loss weight",
+    )
+    parser.add_argument("--aux-pattern-clusters", type=int, default=4)
+    parser.add_argument("--aux-min-speaker-records", type=int, default=10)
+    parser.add_argument(
+        "--speaker-clusters",
+        type=Path,
+        help="audio-only pseudo-speaker clusters.json",
+    )
+    parser.add_argument(
+        "--selection-split",
+        choices=("prompt", "speaker"),
+        default="prompt",
+        help="development split used only for model/epoch selection",
+    )
     parser.add_argument("--bootstrap-samples", type=int, default=10_000)
     parser.add_argument(
         "--quick",
@@ -1720,6 +2215,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         max_ctc_epochs=arguments.ctc_epochs,
         max_scorer_epochs=arguments.scorer_epochs,
         joint_epochs=arguments.joint_epochs,
+        auxiliary_severity_weight=arguments.aux_severity_weight,
+        auxiliary_pattern_weight=arguments.aux_pattern_weight,
+        auxiliary_pattern_clusters=arguments.aux_pattern_clusters,
+        auxiliary_min_speaker_records=arguments.aux_min_speaker_records,
+        speaker_clusters_path=arguments.speaker_clusters,
+        selection_split=arguments.selection_split,
         bootstrap_samples=arguments.bootstrap_samples,
         quick=arguments.quick,
     )
