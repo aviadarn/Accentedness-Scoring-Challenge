@@ -7,11 +7,12 @@ audio checks, and output validation straightforward to exercise in tests.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 import html
 import math
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 import unicodedata
 
@@ -29,6 +30,14 @@ MIN_PEAK_AMPLITUDE = 1e-4
 CLIPPING_AMPLITUDE = 0.999
 CLIPPING_WARNING_FRACTION = 0.01
 MAX_PHONE_COUNT = 100
+DEFAULT_DIFFICULTY = "Standard"
+DIFFICULTY_PROFILES: Mapping[str, tuple[float, float]] = MappingProxyType(
+    {
+        "Beginner": (15.0, 65.0),
+        "Standard": (25.0, 75.0),
+        "Advanced": (35.0, 85.0),
+    }
+)
 PRACTICE_SENTENCES: tuple[str, ...] = (
     "How much was it",
     "We were now good friends",
@@ -308,14 +317,27 @@ def score_recording(
     return DemoScoreResult(phonemes=phones, scores=scores, audio=audio)
 
 
-def score_band(score: float) -> str:
-    """Map a continuous score to the declared 25/75 display bands."""
+def validate_difficulty(difficulty: str) -> tuple[float, float]:
+    """Return the configured band cutoffs for one coaching difficulty."""
+
+    try:
+        return DIFFICULTY_PROFILES[difficulty]
+    except (KeyError, TypeError) as error:
+        choices = ", ".join(DIFFICULTY_PROFILES)
+        raise DemoInputError(
+            f"Choose a valid coaching difficulty: {choices}."
+        ) from error
+
+
+def score_band(score: float, difficulty: str = DEFAULT_DIFFICULTY) -> str:
+    """Map a continuous score to the selected coaching-difficulty bands."""
 
     if not math.isfinite(score) or not 0.0 <= score <= 100.0:
         raise ValueError("score must be finite and within [0, 100]")
-    if score < 25.0:
+    lower_cutoff, upper_cutoff = validate_difficulty(difficulty)
+    if score < lower_cutoff:
         return "Needs practice"
-    if score < 75.0:
+    if score < upper_cutoff:
         return "Developing"
     return "American-like"
 
@@ -329,19 +351,25 @@ _BAND_CLASSES = {
 
 def render_result(
     result: DemoScoreResult,
+    difficulty: str = DEFAULT_DIFFICULTY,
 ) -> tuple[str, str, list[list[str | float | int]]]:
     """Render summary Markdown, colored phone HTML, and the detail table."""
 
     if not result.phonemes or len(result.phonemes) != len(result.scores):
         raise DemoOutputError("Cannot render incomplete phone scores.")
+    lower_cutoff, upper_cutoff = validate_difficulty(difficulty)
     mean_score = sum(result.scores) / len(result.scores)
     band_counts = {
-        band: sum(score_band(score) == band for score in result.scores)
+        band: sum(score_band(score, difficulty) == band for score in result.scores)
         for band in _BAND_CLASSES
     }
     summary = (
         f"**{len(result.scores)} phonemes scored** · Mean **{mean_score:.1f}/100** · "
         f"Audio **{result.audio.duration_seconds:.2f}s**  \n"
+        f"Coaching difficulty: **{difficulty}** · "
+        f"Bands: Needs practice **<{lower_cutoff:g}**, "
+        f"Developing **{lower_cutoff:g}–<{upper_cutoff:g}**, "
+        f"American-like **≥{upper_cutoff:g}**  \n"
         f"American-like: **{band_counts['American-like']}** · "
         f"Developing: **{band_counts['Developing']}** · "
         f"Needs practice: **{band_counts['Needs practice']}**"
@@ -352,7 +380,7 @@ def render_result(
     for position, (phone, score) in enumerate(
         zip(result.phonemes, result.scores, strict=True), start=1
     ):
-        band = score_band(score)
+        band = score_band(score, difficulty)
         band_class = _BAND_CLASSES[band]
         safe_phone = html.escape(phone)
         safe_label = html.escape(f"{phone}: {score:.1f}, {band}", quote=True)
@@ -375,6 +403,8 @@ __all__ = [
     "AudioInspection",
     "CLIPPING_AMPLITUDE",
     "CLIPPING_WARNING_FRACTION",
+    "DEFAULT_DIFFICULTY",
+    "DIFFICULTY_PROFILES",
     "DemoInputError",
     "DemoOutputError",
     "DemoScoreResult",
@@ -395,4 +425,5 @@ __all__ = [
     "require_fresh_generated_text",
     "score_band",
     "score_recording",
+    "validate_difficulty",
 ]

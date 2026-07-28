@@ -110,21 +110,45 @@ speaker IDs, language backgrounds, rater agreement, and an authoritative
 nationality, competence, or a high-stakes judgment. Alignment and G2P mistakes
 can also be mistaken for accent errors.
 
-For difficulty adjustment, I would preserve the raw score and alter only the
-coaching threshold. Per-phone thresholds should be calibrated on a new,
-speaker-disjoint, human-rated set; lenient/standard/strict modes can then apply
-fixed offsets. A learner-adaptive mode could target about 70% recent success on
-each phone and gradually raise its threshold. Keeping difficulty separate from
-the model score preserves comparability and exposes calibration problems.
+## Learner Difficulty Bonus
+
+From an English learner's perspective, the current scoring feels too forgiving
+on genuine errors and inconsistent across phones. Only 43.53% of validation
+label-0 phones fall below the Standard "Needs practice" cutoff of 25, while
+11.94% receive an "American-like" score of at least 75. In the own-voice pair,
+the intended American rendition improves the mean by only 3.13 points and just
+10/20 phones move in the expected direction. A learner could therefore receive
+strong feedback for a genuine error while seeing little or reversed movement
+after an improvement.
+
+The demo addresses coaching difficulty without rewriting the model output. Its
+global profiles classify every phone as follows:
+
+| Profile | Needs practice | Developing | American-like |
+|---|---:|---:|---:|
+| Beginner | `<15` | `15..<65` | `>=65` |
+| Standard | `<25` | `25..<75` | `>=75` |
+| Advanced | `<35` | `35..<85` | `>=85` |
+
+Changing the profile only rerenders the coaching bands, counts, colors, and
+threshold explanation for the latest result. The raw per-phone scores and mean
+never change, so results remain comparable; Standard preserves the validation
+bins used above. These global presets are illustrative product heuristics, not
+learner- or phone-calibrated difficulty levels.
+
+A future adaptive mode should first calibrate per-phone thresholds on a new,
+speaker-disjoint, human-rated dataset. With explicit consent to retain a
+learner's practice history, it could then adjust each phone's threshold toward
+about 70% recent success and gradually increase difficulty. Without that human
+data and consented history, the demo should not present the presets as
+personalized or empirically calibrated.
 
 ## Demo
 
-Temporary public demo: **https://d65667f48273d70724.gradio.live**
-
-The link was verified on July 28, 2026 and is a best-effort Gradio tunnel that
-can remain available for up to one week while the local host is running. A
-permanent Hugging Face Gradio Space could not be created because the current
-Hugging Face account requires a paid plan for compute Spaces. The same app runs
-locally with `uv run python demo_app.py` from `submission/`; it supports a
-microphone or upload, generated editable phonemes, sentence playback, and
-ordered per-phone scores.
+The previous temporary Gradio URL now returns 404 and is expired; there is no
+replacement public deployment. The reproducible path is to run
+`uv run python demo_app.py` from `submission/`. The local app supports a
+microphone or upload, generated editable phonemes, sentence playback, ordered
+per-phone scores, and Beginner/Standard/Advanced coaching difficulty. Select a
+profile before scoring or change it afterward to reclassify the cached result;
+the raw scores do not change.

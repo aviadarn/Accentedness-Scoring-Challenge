@@ -13,6 +13,8 @@ from accent_score.audio import AudioValidationError, SAMPLE_RATE
 from accent_score.data import PHONE_VOCAB
 from accent_score.demo import (
     AudioInspection,
+    DEFAULT_DIFFICULTY,
+    DIFFICULTY_PROFILES,
     DemoInputError,
     DemoOutputError,
     DemoScoreResult,
@@ -25,6 +27,7 @@ from accent_score.demo import (
     require_fresh_generated_text,
     score_band,
     score_recording,
+    validate_difficulty,
     PRACTICE_SENTENCES,
 )
 from accent_score.g2p import MAX_TEXT_CHARACTERS
@@ -227,6 +230,85 @@ def test_render_result_uses_exact_band_thresholds_and_required_columns() -> None
     assert "style=" not in phone_html
 
 
+@pytest.mark.parametrize(
+    ("difficulty", "lower_cutoff", "upper_cutoff"),
+    [
+        ("Beginner", 15.0, 65.0),
+        ("Standard", 25.0, 75.0),
+        ("Advanced", 35.0, 85.0),
+    ],
+)
+def test_difficulty_profiles_use_exact_inclusive_boundaries(
+    difficulty: str,
+    lower_cutoff: float,
+    upper_cutoff: float,
+) -> None:
+    assert validate_difficulty(difficulty) == (lower_cutoff, upper_cutoff)
+    assert score_band(lower_cutoff - 0.01, difficulty) == "Needs practice"
+    assert score_band(lower_cutoff, difficulty) == "Developing"
+    assert score_band(upper_cutoff - 0.01, difficulty) == "Developing"
+    assert score_band(upper_cutoff, difficulty) == "American-like"
+
+
+def test_difficulty_profiles_are_fixed_and_reject_unknown_modes() -> None:
+    assert DEFAULT_DIFFICULTY == "Standard"
+    assert dict(DIFFICULTY_PROFILES) == {
+        "Beginner": (15.0, 65.0),
+        "Standard": (25.0, 75.0),
+        "Advanced": (35.0, 85.0),
+    }
+    with pytest.raises(TypeError):
+        DIFFICULTY_PROFILES["Custom"] = (10.0, 90.0)  # type: ignore[index]
+    with pytest.raises(DemoInputError, match="valid coaching difficulty"):
+        validate_difficulty("Expert")
+
+
+def test_difficulty_rerenders_bands_without_changing_raw_scores_or_mean() -> None:
+    result = DemoScoreResult(
+        phonemes=("h", "aʊ", "s"),
+        scores=(20.0, 70.0, 80.0),
+        audio=AudioInspection(1.5, 0.5, 0.0),
+    )
+
+    beginner_summary, _beginner_html, beginner_rows = render_result(
+        result, "Beginner"
+    )
+    standard_summary, _standard_html, standard_rows = render_result(
+        result, "Standard"
+    )
+    advanced_summary, _advanced_html, advanced_rows = render_result(
+        result, "Advanced"
+    )
+
+    assert [row[2] for row in beginner_rows] == [20.0, 70.0, 80.0]
+    assert [row[2] for row in standard_rows] == [20.0, 70.0, 80.0]
+    assert [row[2] for row in advanced_rows] == [20.0, 70.0, 80.0]
+    assert [row[3] for row in beginner_rows] == [
+        "Developing",
+        "American-like",
+        "American-like",
+    ]
+    assert [row[3] for row in standard_rows] == [
+        "Needs practice",
+        "Developing",
+        "American-like",
+    ]
+    assert [row[3] for row in advanced_rows] == [
+        "Needs practice",
+        "Developing",
+        "Developing",
+    ]
+    for summary, difficulty, cutoffs in (
+        (beginner_summary, "Beginner", (15, 65)),
+        (standard_summary, "Standard", (25, 75)),
+        (advanced_summary, "Advanced", (35, 85)),
+    ):
+        assert "Mean **56.7/100**" in summary
+        assert f"Coaching difficulty: **{difficulty}**" in summary
+        assert f"Needs practice **<{cutoffs[0]}**" in summary
+        assert f"American-like **≥{cutoffs[1]}**" in summary
+
+
 def _import_demo_app():
     pytest.importorskip("gradio")
     existing = sys.modules.get(DEMO_MODULE_NAME)
@@ -312,6 +394,70 @@ def test_score_ui_emits_clipping_warning_and_returns_all_views(
     assert "82.0/100" in summary
 
 
+def test_cached_difficulty_rerender_does_not_invoke_scorer_again() -> None:
+    app_module = _import_demo_app()
+    scorer_calls: list[tuple[str, list[str]]] = []
+
+    def scorer(path: str, phones: list[str]) -> list[float]:
+        scorer_calls.append((path, phones))
+        return [70.0]
+
+    beginner_summary, _phone_html, beginner_table, cached = (
+        app_module._score_and_cache_ui(
+            "audio.wav",
+            "hello",
+            "h",
+            "hello",
+            "Beginner",
+            scorer=scorer,
+            audio_loader=_loader(_audio()),
+        )
+    )
+    advanced_summary, _advanced_html, advanced_table = (
+        app_module._rerender_cached_ui(cached, "Advanced")
+    )
+
+    assert scorer_calls == [("audio.wav", ["h"])]
+    assert "Mean **70.0/100**" in beginner_summary
+    assert "Mean **70.0/100**" in advanced_summary
+    assert beginner_table == [[1, "h", 70.0, "American-like"]]
+    assert advanced_table == [[1, "h", 70.0, "Developing"]]
+
+
+def test_cached_difficulty_change_before_scoring_skips_all_outputs() -> None:
+    app_module = _import_demo_app()
+
+    outputs = app_module._rerender_cached_ui(None, "Advanced")
+
+    assert outputs == (
+        app_module.gr.skip(),
+        app_module.gr.skip(),
+        app_module.gr.skip(),
+    )
+
+
+def test_invalid_difficulty_surfaces_a_safe_gradio_error() -> None:
+    app_module = _import_demo_app()
+    scorer_calls = 0
+
+    def scorer(_path: str, _phones: list[str]) -> list[float]:
+        nonlocal scorer_calls
+        scorer_calls += 1
+        return [70.0]
+
+    with pytest.raises(app_module.gr.Error, match="valid coaching difficulty"):
+        app_module.score_ui(
+            "audio.wav",
+            "hello",
+            "h",
+            "hello",
+            "Expert",
+            scorer=scorer,
+            audio_loader=_loader(_audio()),
+        )
+    assert scorer_calls == 0
+
+
 def test_build_demo_has_exact_audio_and_queue_configuration() -> None:
     app_module = _import_demo_app()
     demo = app_module.build_demo(
@@ -360,6 +506,73 @@ def test_build_demo_has_exact_audio_and_queue_configuration() -> None:
     assert len(score_functions) == 1
     assert score_functions[0].concurrency_limit == 1
     assert score_functions[0].concurrency_id == "model"
+    score_input_types = [
+        component.__class__.__name__ for component in score_functions[0].inputs
+    ]
+    assert score_input_types == [
+        "Audio",
+        "Textbox",
+        "Textbox",
+        "State",
+        "Radio",
+    ]
+    score_output_types = [
+        component.__class__.__name__ for component in score_functions[0].outputs
+    ]
+    assert score_output_types == [
+        "Markdown",
+        "HTML",
+        "Dataframe",
+        "State",
+    ]
+    difficulty_fields = [
+        component
+        for component in demo.blocks.values()
+        if component.__class__.__name__ == "Radio"
+        and component.label == "Coaching difficulty"
+    ]
+    assert len(difficulty_fields) == 1
+    difficulty = difficulty_fields[0]
+    assert difficulty.value == "Standard"
+    assert [value for _label, value in difficulty.choices] == [
+        "Beginner",
+        "Standard",
+        "Advanced",
+    ]
+    assert "does not change the model scores" in difficulty.info
+    cached_states = [
+        component
+        for component in demo.blocks.values()
+        if component.__class__.__name__ == "State"
+        and component.value is None
+        and component.time_to_live == 3600
+    ]
+    assert len(cached_states) == 1
+    rerender_functions = [
+        function
+        for function in demo.fns.values()
+        if getattr(function.fn, "__name__", None) == "_rerender_cached_ui"
+    ]
+    assert len(rerender_functions) == 2
+    assert all(function.queue is False for function in rerender_functions)
+    assert all(
+        function.api_visibility == "private" for function in rerender_functions
+    )
+    assert all(
+        [component.__class__.__name__ for component in function.inputs]
+        == ["State", "Radio"]
+        for function in rerender_functions
+    )
+    assert sum(function.trigger_after is not None for function in rerender_functions) == 1
+    score_api = demo.get_api_info()["named_endpoints"]["/score_pronunciation"]
+    assert [parameter["parameter_name"] for parameter in score_api["parameters"]] == [
+        "audio_path",
+        "text",
+        "phone_text",
+        "difficulty",
+    ]
+    assert score_api["parameters"][-1]["parameter_default"] == "Standard"
+    assert len(score_api["returns"]) == 3
     speak_functions = [
         function
         for function in demo.fns.values()

@@ -18,13 +18,17 @@ import gradio as gr
 from accent_score.audio import load_audio
 from accent_score.data import PHONE_VOCAB
 from accent_score.demo import (
+    DEFAULT_DIFFICULTY,
+    DIFFICULTY_PROFILES,
     DemoInputError,
     DemoOutputError,
+    DemoScoreResult,
     generate_phone_text,
     generate_practice_prompt,
     PRACTICE_SENTENCES,
     render_result,
     score_recording,
+    validate_difficulty,
 )
 
 
@@ -218,18 +222,23 @@ def practice_sentence_ui(
     raise AssertionError("unreachable")
 
 
-def score_ui(
+def _score_ui_result(
     audio_path: str | None,
     text: str,
     phone_text: str,
     generated_source_text: str,
+    difficulty: str = DEFAULT_DIFFICULTY,
     *,
     scorer: Callable[[str, list[str]], Sequence[float]] | None = None,
     audio_loader: Callable[..., Any] = load_audio,
-) -> tuple[str, str, list[list[str | float | int]]]:
-    """Gradio-safe wrapper for validation, scoring, and result rendering."""
+) -> tuple[
+    tuple[str, str, list[list[str | float | int]]],
+    DemoScoreResult,
+]:
+    """Validate and score once, returning both rendered and reusable results."""
 
     try:
+        validate_difficulty(difficulty)
         result = score_recording(
             audio_path,
             text,
@@ -238,7 +247,7 @@ def score_ui(
             scorer=scorer or _lazy_score_phonemes,
             audio_loader=audio_loader,
         )
-        rendered = render_result(result)
+        rendered = render_result(result, difficulty)
     except DemoInputError as error:
         _raise_user_error(str(error))
     except DemoOutputError:
@@ -253,7 +262,85 @@ def score_ui(
     warning = result.audio.clipping_warning
     if warning is not None:
         gr.Warning(warning, duration=8)
+    return rendered, result
+
+
+def score_ui(
+    audio_path: str | None,
+    text: str,
+    phone_text: str,
+    generated_source_text: str,
+    difficulty: str = DEFAULT_DIFFICULTY,
+    *,
+    scorer: Callable[[str, list[str]], Sequence[float]] | None = None,
+    audio_loader: Callable[..., Any] = load_audio,
+) -> tuple[str, str, list[list[str | float | int]]]:
+    """Gradio-safe wrapper for validation, scoring, and result rendering."""
+
+    rendered, _result = _score_ui_result(
+        audio_path,
+        text,
+        phone_text,
+        generated_source_text,
+        difficulty,
+        scorer=scorer,
+        audio_loader=audio_loader,
+    )
     return rendered
+
+
+def _score_and_cache_ui(
+    audio_path: str | None,
+    text: str,
+    phone_text: str,
+    generated_source_text: str,
+    difficulty: str = DEFAULT_DIFFICULTY,
+    *,
+    scorer: Callable[[str, list[str]], Sequence[float]] | None = None,
+    audio_loader: Callable[..., Any] = load_audio,
+) -> tuple[
+    str,
+    str,
+    list[list[str | float | int]],
+    DemoScoreResult,
+]:
+    """Score once and retain the validated result for feedback-only rerenders."""
+
+    (summary, phone_html, rows), result = _score_ui_result(
+        audio_path,
+        text,
+        phone_text,
+        generated_source_text,
+        difficulty,
+        scorer=scorer,
+        audio_loader=audio_loader,
+    )
+    return summary, phone_html, rows, result
+
+
+def _rerender_cached_ui(
+    result: DemoScoreResult | None,
+    difficulty: str,
+) -> tuple[
+    str | dict[str, Any],
+    str | dict[str, Any],
+    list[list[str | float | int]] | dict[str, Any],
+]:
+    """Apply a coaching profile to cached scores without invoking the model."""
+
+    if result is None:
+        return gr.skip(), gr.skip(), gr.skip()
+    try:
+        return render_result(result, difficulty)
+    except DemoInputError as error:
+        _raise_user_error(str(error))
+    except DemoOutputError:
+        LOGGER.exception("cached scorer result could not be rendered")
+        _raise_user_error("Could not update the feedback. Score the recording again.")
+    except Exception:
+        LOGGER.exception("unexpected cached-result rendering failure")
+        _raise_user_error("Could not update the feedback. Score the recording again.")
+    raise AssertionError("unreachable")
 
 
 def build_demo(
@@ -266,7 +353,11 @@ def build_demo(
 
     generate_callback = partial(generate_phones_ui, converter=converter)
     practice_callback = partial(practice_sentence_ui, converter=converter)
-    score_callback = partial(score_ui, scorer=scorer, audio_loader=audio_loader)
+    score_callback = partial(
+        _score_and_cache_ui,
+        scorer=scorer,
+        audio_loader=audio_loader,
+    )
 
     with gr.Blocks(
         title="Phoneme Accentedness Scorer",
@@ -336,7 +427,18 @@ def build_demo(
         )
 
         gr.Markdown("## 3. Score your pronunciation")
+        difficulty = gr.Radio(
+            choices=list(DIFFICULTY_PROFILES),
+            value=DEFAULT_DIFFICULTY,
+            label="Coaching difficulty",
+            info=(
+                "Changes how raw scores are grouped into feedback bands. "
+                "It does not change the model scores or displayed mean."
+            ),
+            interactive=True,
+        )
         score_button = gr.Button("Score pronunciation", variant="primary")
+        cached_result = gr.State(value=None, time_to_live=3600)
 
         gr.Markdown("## Summary")
         summary = gr.Markdown()
@@ -381,13 +483,29 @@ def build_demo(
             api_name="generate_phonemes",
             queue=False,
         )
-        score_button.click(
+        score_event = score_button.click(
             fn=score_callback,
-            inputs=[audio, text, phone_text, generated_source_text],
-            outputs=[summary, phone_html, table],
+            inputs=[audio, text, phone_text, generated_source_text, difficulty],
+            outputs=[summary, phone_html, table, cached_result],
             api_name="score_pronunciation",
             concurrency_limit=1,
             concurrency_id="model",
+        )
+        score_event.then(
+            fn=_rerender_cached_ui,
+            inputs=[cached_result, difficulty],
+            outputs=[summary, phone_html, table],
+            api_name=False,
+            queue=False,
+            show_progress="hidden",
+        )
+        difficulty.change(
+            fn=_rerender_cached_ui,
+            inputs=[cached_result, difficulty],
+            outputs=[summary, phone_html, table],
+            api_name=False,
+            queue=False,
+            show_progress="hidden",
         )
 
     app.queue(max_size=16, default_concurrency_limit=1)
