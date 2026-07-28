@@ -24,7 +24,7 @@ for each phone. To use it:
    it, or select **New practice sentence** for another prompt.
 2. Record or upload yourself reading that sentence.
 3. Review the automatically generated phone sequence and edit it when needed.
-4. For custom text, select **Generate phonemes for my text** before recording.
+4. For custom text, select **Update phonemes after editing text** before recording.
 5. Select **Score pronunciation** and inspect the ordered per-phone results.
 
 The generated sequence is a starting point, not a guaranteed canonical

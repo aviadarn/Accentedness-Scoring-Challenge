@@ -31,6 +31,99 @@ from accent_score.demo import (
 LOGGER = logging.getLogger(__name__)
 MAX_UPLOAD_SIZE = "15mb"
 PHONE_INVENTORY_TEXT = " ".join(PHONE_VOCAB)
+DEMO_CSS = r"""
+#expected-phones textarea {
+    background: #ffffff !important;
+    color: #111827 !important;
+    caret-color: #111827 !important;
+    font-family: "Noto Sans", "DejaVu Sans", "Segoe UI Symbol", sans-serif !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    line-height: 1.7 !important;
+}
+
+#expected-phones textarea::placeholder {
+    color: #4b5563 !important;
+    opacity: 1 !important;
+}
+
+.phone-score-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.phone-score-chip {
+    align-items: center;
+    background: var(--phone-chip-background);
+    border: 2px solid var(--phone-chip-border);
+    border-radius: 0.6rem;
+    color: #111827;
+    display: inline-flex;
+    flex-direction: column;
+    font-family: "Noto Sans", "DejaVu Sans", "Segoe UI Symbol", sans-serif;
+    font-variant-numeric: tabular-nums;
+    gap: 0.15rem;
+    line-height: 1.45;
+    padding: 0.5rem 0.7rem;
+}
+
+.phone-symbol {
+    color: inherit;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.phone-value {
+    color: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.band-needs-practice {
+    --phone-chip-background: #fff1f2;
+    --phone-chip-border: #b91c1c;
+}
+
+.band-developing {
+    --phone-chip-background: #fffbeb;
+    --phone-chip-border: #a16207;
+}
+
+.band-american-like {
+    --phone-chip-background: #f0fdf4;
+    --phone-chip-border: #15803d;
+}
+
+.dark #expected-phones textarea {
+    background: #111827 !important;
+    color: #f9fafb !important;
+    caret-color: #f9fafb !important;
+}
+
+.dark #expected-phones textarea::placeholder {
+    color: #d1d5db !important;
+}
+
+.dark .phone-score-chip {
+    color: #f9fafb;
+}
+
+.dark .band-needs-practice {
+    --phone-chip-background: #450a0a;
+    --phone-chip-border: #fca5a5;
+}
+
+.dark .band-developing {
+    --phone-chip-background: #422006;
+    --phone-chip-border: #facc15;
+}
+
+.dark .band-american-like {
+    --phone-chip-background: #052e16;
+    --phone-chip-border: #86efac;
+}
+"""
 SPEAK_SENTENCE_JS = r"""
 (sentence) => {
     const text = String(sentence ?? "").trim();
@@ -193,7 +286,8 @@ def build_demo(
         gr.Markdown("## 1. Sentence to say")
         gr.Markdown(
             "Read this sentence **exactly as shown**. You can request another "
-            "sentence or type your own."
+            "sentence or type your own. Practice sentences fill the phonemes "
+            "automatically."
         )
         text = gr.Textbox(
             value=PRACTICE_SENTENCES[0],
@@ -210,13 +304,17 @@ def build_demo(
                 "New practice sentence", variant="primary"
             )
             generate_button = gr.Button(
-                "Generate phonemes for my text", variant="secondary"
+                "Update phonemes after editing text", variant="secondary"
             )
         phone_text = gr.Textbox(
-            label="Expected phonemes (generated automatically; editable)",
+            label="Expected phonemes (automatic for practice sentences; editable)",
             placeholder="w i j ɝ b oʊ θ ...",
-            info="Whitespace-separated tokens. You may edit these before scoring.",
+            info=(
+                "Whitespace-separated tokens. Use Update only after typing or "
+                "editing the sentence; you may also edit these phones directly."
+            ),
             lines=3,
+            elem_id="expected-phones",
         )
         with gr.Accordion("Supported phoneme inventory", open=False):
             gr.Markdown(f"`{PHONE_INVENTORY_TEXT}`")
@@ -302,7 +400,7 @@ demo = build_demo()
 
 
 def main() -> None:
-    demo.launch(max_file_size=MAX_UPLOAD_SIZE, show_error=False)
+    demo.launch(max_file_size=MAX_UPLOAD_SIZE, show_error=False, css=DEMO_CSS)
 
 
 if __name__ == "__main__":
@@ -311,6 +409,7 @@ if __name__ == "__main__":
 
 __all__ = [
     "MAX_UPLOAD_SIZE",
+    "DEMO_CSS",
     "SPEAK_SENTENCE_JS",
     "build_demo",
     "demo",

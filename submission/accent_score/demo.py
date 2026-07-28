@@ -320,10 +320,10 @@ def score_band(score: float) -> str:
     return "American-like"
 
 
-_BAND_COLORS = {
-    "Needs practice": ("#b91c1c", "#fef2f2"),
-    "Developing": ("#a16207", "#fffbeb"),
-    "American-like": ("#15803d", "#f0fdf4"),
+_BAND_CLASSES = {
+    "Needs practice": "band-needs-practice",
+    "Developing": "band-developing",
+    "American-like": "band-american-like",
 }
 
 
@@ -337,7 +337,7 @@ def render_result(
     mean_score = sum(result.scores) / len(result.scores)
     band_counts = {
         band: sum(score_band(score) == band for score in result.scores)
-        for band in _BAND_COLORS
+        for band in _BAND_CLASSES
     }
     summary = (
         f"**{len(result.scores)} phonemes scored** · Mean **{mean_score:.1f}/100** · "
@@ -353,22 +353,18 @@ def render_result(
         zip(result.phonemes, result.scores, strict=True), start=1
     ):
         band = score_band(score)
-        foreground, background = _BAND_COLORS[band]
+        band_class = _BAND_CLASSES[band]
         safe_phone = html.escape(phone)
         safe_label = html.escape(f"{phone}: {score:.1f}, {band}", quote=True)
         phone_spans.append(
             f'<span role="listitem" aria-label="{safe_label}" '
-            f'title="{safe_label}" style="display:inline-flex;flex-direction:column;'
-            f'align-items:center;gap:0.15rem;padding:0.45rem 0.6rem;border-radius:0.55rem;'
-            f'border:1px solid {foreground};color:{foreground};background:{background};'
-            f'font-variant-numeric:tabular-nums">'
-            f'<strong style="font-size:1.05rem">{safe_phone}</strong>'
-            f'<span style="font-size:0.78rem">{score:.1f}</span></span>'
+            f'title="{safe_label}" class="phone-score-chip {band_class}">'
+            f'<strong class="phone-symbol">{safe_phone}</strong>'
+            f'<span class="phone-value">{score:.1f}</span></span>'
         )
         rows.append([position, phone, round(score, 2), band])
     phone_html = (
-        '<div role="list" aria-label="Phoneme scores" '
-        'style="display:flex;flex-wrap:wrap;gap:0.45rem">'
+        '<div role="list" aria-label="Phoneme scores" class="phone-score-list">'
         + "".join(phone_spans)
         + "</div>"
     )

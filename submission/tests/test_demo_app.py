@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import math
 from pathlib import Path
+import re
 import sys
 
 import numpy as np
@@ -217,6 +218,13 @@ def test_render_result_uses_exact_band_thresholds_and_required_columns() -> None
     assert score_band(75.0) == "American-like"
     assert 'role="list"' in phone_html
     assert "Needs practice" in phone_html
+    assert 'class="phone-score-list"' in phone_html
+    assert "phone-score-chip band-needs-practice" in phone_html
+    assert "phone-score-chip band-developing" in phone_html
+    assert "phone-score-chip band-american-like" in phone_html
+    assert 'class="phone-symbol"' in phone_html
+    assert 'class="phone-value"' in phone_html
+    assert "style=" not in phone_html
 
 
 def _import_demo_app():
@@ -330,6 +338,20 @@ def test_build_demo_has_exact_audio_and_queue_configuration() -> None:
     assert demo.enable_queue is True
     assert demo._queue.max_size == 16
     assert demo._queue.default_concurrency_limit == 1
+    expected_phone_fields = [
+        component
+        for component in demo.blocks.values()
+        if component.__class__.__name__ == "Textbox"
+        and component.elem_id == "expected-phones"
+    ]
+    assert len(expected_phone_fields) == 1
+    button_labels = {
+        component.value
+        for component in demo.blocks.values()
+        if component.__class__.__name__ == "Button"
+    }
+    assert "Update phonemes after editing text" in button_labels
+    assert "Generate phonemes for my text" not in button_labels
     score_functions = [
         function
         for function in demo.fns.values()
@@ -360,6 +382,80 @@ def test_sentence_playback_is_browser_only_us_english_speech() -> None:
     assert "fetch(" not in javascript
 
 
+def _relative_luminance(hex_color: str) -> float:
+    channels = [int(hex_color[index : index + 2], 16) / 255 for index in (1, 3, 5)]
+    linear = [
+        value / 12.92
+        if value <= 0.04045
+        else ((value + 0.055) / 1.055) ** 2.4
+        for value in channels
+    ]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def _contrast_ratio(first: str, second: str) -> float:
+    high, low = sorted(
+        (_relative_luminance(first), _relative_luminance(second)), reverse=True
+    )
+    return (high + 0.05) / (low + 0.05)
+
+
+def _css_declarations(css: str, selector: str) -> dict[str, str]:
+    match = re.search(
+        rf"(?:^|\n){re.escape(selector)}\s*\{{(?P<body>[^}}]+)\}}",
+        css,
+    )
+    assert match is not None, f"missing CSS selector: {selector}"
+    declarations: dict[str, str] = {}
+    for declaration in match.group("body").split(";"):
+        if ":" not in declaration:
+            continue
+        name, value = declaration.split(":", maxsplit=1)
+        declarations[name.strip()] = value.replace("!important", "").strip()
+    return declarations
+
+
+def test_phone_css_has_high_contrast_light_and_dark_palettes() -> None:
+    app_module = _import_demo_app()
+    css = app_module.DEMO_CSS
+    light_input = _css_declarations(css, "#expected-phones textarea")
+    light_placeholder = _css_declarations(
+        css, "#expected-phones textarea::placeholder"
+    )
+    dark_input = _css_declarations(css, ".dark #expected-phones textarea")
+    dark_placeholder = _css_declarations(
+        css, ".dark #expected-phones textarea::placeholder"
+    )
+    light_chip = _css_declarations(css, ".phone-score-chip")
+    dark_chip = _css_declarations(css, ".dark .phone-score-chip")
+    light_bands = [
+        _css_declarations(css, f".band-{name}")
+        for name in ("needs-practice", "developing", "american-like")
+    ]
+    dark_bands = [
+        _css_declarations(css, f".dark .band-{name}")
+        for name in ("needs-practice", "developing", "american-like")
+    ]
+    pairs = [
+        (light_input["color"], light_input["background"]),
+        (light_placeholder["color"], light_input["background"]),
+        (dark_input["color"], dark_input["background"]),
+        (dark_placeholder["color"], dark_input["background"]),
+        *[
+            (light_chip["color"], band["--phone-chip-background"])
+            for band in light_bands
+        ],
+        *[
+            (dark_chip["color"], band["--phone-chip-background"])
+            for band in dark_bands
+        ],
+    ]
+
+    assert '"Noto Sans", "DejaVu Sans", "Segoe UI Symbol"' in css
+    for foreground, background in pairs:
+        assert _contrast_ratio(foreground, background) >= 4.5
+
+
 def test_demo_import_builds_ui_without_importing_inference() -> None:
     pytest.importorskip("gradio")
     sys.modules.pop(DEMO_MODULE_NAME, None)
@@ -386,3 +482,4 @@ def test_main_launches_with_upload_cap_and_hidden_internal_errors(
 
     assert received["max_file_size"] == "15mb"
     assert received["show_error"] is False
+    assert received["css"] == app_module.DEMO_CSS
