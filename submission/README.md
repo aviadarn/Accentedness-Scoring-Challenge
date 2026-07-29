@@ -27,6 +27,7 @@ submission/
 ├── inference.py      # Required scoring interface
 ├── train.py          # Original general training/selection entry point
 ├── demo_app.py       # Gradio application
+├── modal_app.py      # Scale-to-zero public deployment
 ├── accent_score/     # Production implementation
 ├── tests/            # Production tests
 ├── pyproject.toml
@@ -63,6 +64,11 @@ deployed files.
 
 ## Demo
 
+Open the
+[public Gradio demo](https://aviadarn--phone-accentedness-scorer-web.modal.run),
+which serves this exact promoted E16 bundle on CPU. It scales to zero when idle,
+so allow several seconds for the first page load.
+
 Launch the local Gradio application:
 
 ```bash
@@ -85,9 +91,20 @@ outside 0.5–30 seconds, uploads over 15 MB, unsupported phones, and stale phon
 sequences after the text changes. Browser speech synthesis stays in the
 browser, while uploaded or recorded audio is processed by the Gradio server.
 
-Local launch is the reproducible path for the promoted checkpoint. This
-repository does not claim that an external Hugging Face Space or other public
-endpoint has already been updated and verified against this exact artifact.
+The public deployment is defined by `modal_app.py`. It uses CPU-only PyTorch,
+bakes in only the evaluator-facing code and checkpoint, allows one container so
+Gradio session state remains consistent, and scales to zero between visits.
+Redeploy it from the repository root after one-time Modal authentication:
+
+```bash
+uvx modal setup
+uvx modal deploy submission/modal_app.py
+```
+
+The [Hugging Face model](https://huggingface.co/Aviadara/phone-accentedness-scorer)
+contains the identical hash-bound artifact. The
+[Hugging Face project page](https://huggingface.co/spaces/Aviadara/phone-accentedness-scorer)
+links the live demo, model, Colab workflow, and source repository.
 
 The repository also includes a
 [Google Colab notebook](../notebooks/phone_accentedness_colab.ipynb) for

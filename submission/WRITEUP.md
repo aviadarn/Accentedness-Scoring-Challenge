@@ -179,14 +179,17 @@ personalized or empirically calibrated.
 
 ## Demo
 
-The reproducible path for the promoted checkpoint is to run
-`uv run python demo_app.py` from `submission/`. No public endpoint is claimed
-here to serve this exact E16 artifact; external deployment and verification are
-separate from checkpoint promotion. The local app supports a microphone or
-upload, generated editable phonemes, sentence playback, ordered per-phone
-scores, and Beginner/Standard/Advanced coaching difficulty. Select a profile
-before scoring or change it afterward to reclassify the cached result; the raw
-scores do not change.
+The [public Gradio demo](https://aviadarn--phone-accentedness-scorer-web.modal.run)
+serves the exact E16 artifact on a scale-to-zero Modal CPU deployment; the first
+page load after an idle period can take several seconds. A reproducible local
+alternative is `uv run python demo_app.py` from `submission/`. The app supports
+a microphone or upload, generated editable phonemes, sentence playback,
+ordered per-phone scores, and Beginner/Standard/Advanced coaching difficulty.
+Select a profile before scoring or change it afterward to reclassify the cached
+result; the raw scores do not change. The
+[Hugging Face project page](https://huggingface.co/spaces/Aviadara/phone-accentedness-scorer)
+and [model repository](https://huggingface.co/Aviadara/phone-accentedness-scorer)
+provide the public handoff, while `modal_app.py` defines the deployed runtime.
 
 The production provenance is hash-bound in `model/deployment_manifest.json`.
 The selected model SHA-256 is

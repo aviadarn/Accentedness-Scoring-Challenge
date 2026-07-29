@@ -17,6 +17,9 @@ new-speaker performance.
 
 ## Start here
 
+- [Live Gradio demo](https://aviadarn--phone-accentedness-scorer-web.modal.run)
+- [Hugging Face model](https://huggingface.co/Aviadara/phone-accentedness-scorer)
+- [Hugging Face project page](https://huggingface.co/spaces/Aviadara/phone-accentedness-scorer)
 - [Challenge brief](data/phone-scoring-ml-challenge.md)
 - [Dataset wiki and audit](data/README.md)
 - [Submission setup and commands](submission/README.md)
@@ -55,6 +58,7 @@ new-speaker performance.
     ├── train.py
     ├── inference.py
     ├── demo_app.py
+    ├── modal_app.py                 # Persistent public demo deployment
     └── WRITEUP.md
 ```
 
@@ -83,6 +87,10 @@ Launch the local Gradio demo:
 ```bash
 uv run python demo_app.py
 ```
+
+Or use the
+[public CPU-hosted demo](https://aviadarn--phone-accentedness-scorer-web.modal.run).
+It scales to zero when idle, so the first page load can take several seconds.
 
 For a hosted notebook workflow, open
 [`notebooks/phone_accentedness_colab.ipynb`](notebooks/phone_accentedness_colab.ipynb)
