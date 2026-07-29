@@ -38,24 +38,33 @@ The labels have a natural order, so I predict two cumulative probabilities
 rather than three unrelated classes. Their expected value gives a smooth
 0–100 score. Balanced MAE is primary because it preserves continuous error but
 weights all three true labels equally. QWK, macro-F1, balanced accuracy, and
-Spearman expose different failure modes.
+Spearman expose different failure modes. The promoted objective uses per-phone
+weights proportional to class count to the power `-0.54`, a small
+training-only-confirmed move beyond inverse square root.
 
 ## 6. Main result — 55 seconds
 
-The selected model reaches 22.57 balanced MAE, compared with 32.03 for the
-sequence-only baseline. The paired bootstrap estimates a 9.45-point reduction,
-so the model is using acoustic evidence rather than only learning phone priors.
-The secondary metrics are directionally consistent. I would not yet call these
+The promoted E16 model reaches 21.85 balanced MAE, 18.01 ordinary MAE, 0.579
+QWK, 0.568 macro-F1, and 0.558 Spearman. Against the previous production model,
+balanced MAE improves by 0.725 with paired 95% interval from -1.355 to -0.081.
+Before final validation, the prompt-purged grouped OOF comparison also improved
+balanced MAE by 0.210 with paired pseudo-speaker interval from -0.236 to -0.184.
+The original acoustic model's 22.57 still materially beats the 32.03
+sequence-only baseline, so the architecture uses acoustic evidence rather than
+only phone priors. I would not call the absolute validation numbers
 new-speaker metrics; the overlap audit comes next.
 
-## 7. Rejected experiments — 60 seconds
+## 7. Experiments and selection — 60 seconds
 
 I kept the production decision conservative. Whisper-small was worse under the
 tested setup. Auxiliary severity and cluster labels did not produce a reliable
 gain. Full inverse class weighting improved rare-class balanced MAE on its
 speaker-held-out test, but hurt overall MAE, QWK, macro-F1, majority recall, and
-calibration. These experiments use their own documented protocols and should
-not be read as one leaderboard.
+calibration. A later fixed test of the much smaller `alpha=0.54` change passed:
+label-0 and label-1 recall improved, while the accepted validation tradeoffs
+were MAE +0.084, QWK -0.0055, ECE +0.0085, and label-2 recall -0.0092. These
+experiments use their own documented protocols and should not be read as one
+leaderboard.
 
 ## 8. Evaluation caveat — 55 seconds
 
@@ -67,12 +76,13 @@ point: this validation split is optimistic for new speakers.
 
 ## 9. Sniff test — 55 seconds
 
-The controlled own-voice pair moved in the correct direction by only 3.13
-points, with just half of phones improving and a pace confound. On labeled
-validation examples, fewer than half of heavily accented phones fell below 25,
-and nearly 12% were scored at least 75. The likely failure mode is that Whisper
-can recognize a phone confidently even when its realization remains subtly
-non-American.
+The controlled own-voice pair and detailed examples used the older E01
+checkpoint: the pair moved in the correct direction by only 3.13 points, with
+just half of phones improving and a pace confound. With E16, fewer than half of
+heavily accented validation phones still fall below 25, and 10.45% score at
+least 75. The likely failure mode is that Whisper can recognize a phone
+confidently even when its realization remains subtly non-American. A matched
+qualitative rerun is still needed.
 
 ## 10. Label verification — 45 seconds
 
@@ -99,9 +109,12 @@ uv run python demo_app.py
 ## 12. Conclusion — 40 seconds
 
 The core result is positive: aligned audio materially outperforms static and
-sequence-only baselines. The honest limitation is that robustness to unseen
-speakers and subtle accent differences is unresolved. My next priorities are a
-speaker-disjoint expert-rated benchmark, human label adjudication with
+sequence-only baselines, and the prompt-purged E16 objective produces a smaller
+but statistically supported balanced-MAE improvement over production. The
+honest limitations are that final validation overlaps training speakers and
+prompts, rare-label recall gains are modest, and calibration and majority
+recall regressed slightly within the declared guardrails. My next priorities
+are a speaker-disjoint expert-rated benchmark, human label adjudication with
 phone-specific calibration, and a more accent-sensitive encoder tested across
 multiple seeds.
 

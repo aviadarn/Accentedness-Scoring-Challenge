@@ -1,5 +1,19 @@
 {
+  "confirmation_sha256": "eac032907954b7e530f396bb7e4749be470e75c4baba52bc8c058b23dc9995e9",
   "device": "mps",
+  "initialization": {
+    "captured_before_ctc_training": true,
+    "fresh_scorer": {
+      "constructed_after_train_cache": true,
+      "seed": 42,
+      "state_dict_sha256": "5f3b54d369c35a88ac71dd5d25794f48b9dac3ea000aa543ffb940c13e514552"
+    },
+    "loaded_encoder_state_dict_sha256": "889966e826bd381c91224e5a747788ea657bff76556e491346d606eb950bc78d",
+    "loaded_model_state_dict_sha256": "d96bb5e2c031849f745e3ee120fe829aef5bbac94eac26da08800d54761c293f",
+    "model_name": "openai/whisper-tiny",
+    "requested_revision": "huggingface_default_revision",
+    "resolved_revision": "169d4a4341b33bc18d8881c4b69c2e104e1cc0af"
+  },
   "packages": {
     "numpy": "2.4.6",
     "safetensors": "0.8.0",
@@ -11,12 +25,29 @@
   },
   "platform": "macOS-26.5.1-arm64-arm-64bit",
   "python": "3.11.15 (main, Mar 20 2026, 00:41:54) [Clang 22.1.1 ]",
+  "schema_version": "e16-fixed-retrain-fingerprints-v2",
   "scorer_device": "cpu",
   "seed": 42,
+  "train_audio_content_hash_method": "sha256(ordered repo-relative audio path + file length + file bytes)",
+  "train_audio_content_sha256": "06eea8d7134a896d070d4c66cc294db5922b654297093b00e9d6bc88867c8e0b",
+  "train_label_counts": [
+    10668,
+    6875,
+    69700
+  ],
   "train_manifest_sha256": "f6650855bf62ebbec1e1a60cb8fb491d0e5fb0fb20667d402299fc1238a8148b",
   "train_phones": 87243,
   "train_utterances": 2799,
+  "validation_audio_content_hash_method": "sha256(ordered repo-relative audio path + file length + file bytes)",
+  "validation_audio_content_sha256": "887918c757802d8ab0139be2a540706c5820fdfb537676b71452153727c56e5d",
+  "validation_label_counts": [
+    402,
+    213,
+    2381
+  ],
+  "validation_loaded_after_all_training": true,
   "validation_manifest_sha256": "3f324098b44857e0b70cd9ee1771513d54faf6d0905ca8521b5aeeef29ea23a4",
   "validation_phones": 2996,
+  "validation_predictions_sha256": "33a80035cd2db88019fa1f02b9e1d6d476326c773ce2ef736804387ab9f63d29",
   "validation_utterances": 100
 }

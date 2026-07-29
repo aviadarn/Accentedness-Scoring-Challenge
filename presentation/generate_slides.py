@@ -466,8 +466,8 @@ def slide_04(prs: Presentation):
         add_text(slide, label, x + 0.72, 5.35, 1.58, 0.28, size=10, fill=WHITE, bold=True)
         if idx < 3:
             add_line(slide, x + 2.49, 5.35, x + 2.49, 6.04, line=LINE, width=1.0)
-    add_text(slide, "Training discipline: tune epochs on train-only development data, then restart and fit all 2,799 training utterances.", 0.98, 6.52, 11.30, 0.28, size=11, fill=MUTED, align=PP_ALIGN.CENTER)
-    add_footer(slide, "Sources: submission/WRITEUP.md; experiments/E01-production-model/README.md")
+    add_text(slide, "Training discipline: select the objective with prompt-purged grouped OOF, then run one fixed fit on all 2,799 training utterances.", 0.98, 6.52, 11.30, 0.28, size=11, fill=MUTED, align=PP_ALIGN.CENTER)
+    add_footer(slide, "Sources: submission/WRITEUP.md; experiments/E16-alpha054-confirmation/README.md")
     return slide
 
 
@@ -501,20 +501,20 @@ def slide_05(prs: Presentation):
     add_pill(slide, "BALANCED ACC.", 9.14, 5.49, 1.54, text_color=CORAL)
     add_pill(slide, "SPEARMAN", 10.82, 5.49, 1.16, text_color=AQUA)
     add_rect(slide, 6.92, 6.08, 5.06, 0.55, fill=CARD_2, line=LINE)
-    add_text(slide, "Loss weighting: inverse √ class frequency per phone token", 7.13, 6.24, 4.65, 0.22, size=10.5, fill=WHITE, bold=True, align=PP_ALIGN.CENTER)
+    add_text(slide, "Loss weighting: n_c⁻⁰·⁵⁴ per token • mean-one normalized", 7.13, 6.24, 4.65, 0.22, size=10.5, fill=WHITE, bold=True, align=PP_ALIGN.CENTER)
     add_footer(slide, "Sources: submission/WRITEUP.md; submission/accent_score/metrics.py")
     return slide
 
 
 def slide_06(prs: Presentation):
     slide = blank_slide(prs)
-    add_header(slide, "Validation: audio adds material signal", 6)
+    add_header(slide, "Validation: E16 improves balanced error", 6)
     add_text(slide, "BALANCED MAE • LOWER IS BETTER", 0.82, 1.89, 4.25, 0.24, size=9, fill=MUTED, bold=True)
     labels = [
-        ("Always 100", 50.00, MUTED),
         ("Strongest static", 32.41, CORAL),
         ("Sequence only", 32.03, GOLD),
-        ("Selected acoustic", 22.57, AQUA),
+        ("E01 incumbent", 22.57, BLUE),
+        ("E16 selected", 21.85, AQUA),
     ]
     chart_x, chart_y, max_w = 2.18, 2.45, 4.10
     for idx, (label, value, accent) in enumerate(labels):
@@ -524,17 +524,17 @@ def slide_06(prs: Presentation):
         add_rect(slide, chart_x, y, max_w * value / 50.0, 0.46, fill=accent, radius=True)
         add_text(slide, f"{value:.2f}", chart_x + max_w + 0.17, y + 0.07, 0.70, 0.25, size=11, fill=accent, bold=True)
     add_rect(slide, 0.80, 5.83, 5.80, 0.66, fill=CARD_2, line=AQUA)
-    add_text(slide, "−9.454", 1.03, 5.98, 1.04, 0.31, size=20, fill=AQUA, bold=True)
-    add_text(slide, "balanced-MAE points vs sequence-only", 2.16, 6.00, 2.74, 0.25, size=10, fill=WHITE, bold=True)
-    add_text(slide, "95% CI [−10.556, −8.282]", 4.52, 6.02, 1.82, 0.22, size=8, fill=MUTED, align=PP_ALIGN.RIGHT)
+    add_text(slide, "−0.725", 1.03, 5.98, 1.04, 0.31, size=20, fill=AQUA, bold=True)
+    add_text(slide, "balanced-MAE points vs previous E01 checkpoint", 2.16, 6.00, 2.74, 0.25, size=9.5, fill=WHITE, bold=True)
+    add_text(slide, "95% CI [−1.355, −0.081]", 4.52, 6.02, 1.82, 0.22, size=8, fill=MUTED, align=PP_ALIGN.RIGHT)
 
-    metric_card(slide, "17.92", "OVERALL MAE", 7.05, 1.98, 2.36, accent=BLUE)
-    metric_card(slide, "0.584", "QUADRATIC-WEIGHTED KAPPA", 9.68, 1.98, 2.36, accent=AQUA)
-    metric_card(slide, "0.565", "MACRO-F1", 7.05, 3.36, 2.36, accent=GOLD)
-    metric_card(slide, "0.551", "SPEARMAN", 9.68, 3.36, 2.36, accent=CORAL)
+    metric_card(slide, "18.01", "OVERALL MAE", 7.05, 1.98, 2.36, accent=BLUE)
+    metric_card(slide, "0.579", "QUADRATIC-WEIGHTED KAPPA", 9.68, 1.98, 2.36, accent=AQUA)
+    metric_card(slide, "0.568", "MACRO-F1", 7.05, 3.36, 2.36, accent=GOLD)
+    metric_card(slide, "0.558", "SPEARMAN", 9.68, 3.36, 2.36, accent=CORAL)
     add_rect(slide, 7.05, 4.78, 4.99, 1.25, fill=NAVY_2, line=LINE)
     add_text(slide, "2,996 validation phones", 7.30, 5.02, 2.50, 0.31, size=14, fill=WHITE, bold=True)
-    add_text(slide, "10,000-draw utterance-bootstrap CI: 21.42–23.80", 7.30, 5.50, 4.42, 0.22, size=9.5, fill=MUTED)
+    add_text(slide, "10,000-draw utterance-bootstrap CI: 20.73–23.05", 7.30, 5.50, 4.42, 0.22, size=9.5, fill=MUTED)
     add_rect(slide, 7.05, 6.22, 4.99, 0.48, fill=CARD_2, line=CORAL)
     add_text(slide, "Important: this split is overlap-heavy—not new-speaker evidence.", 7.25, 6.34, 4.60, 0.21, size=9.5, fill=CORAL, bold=True, align=PP_ALIGN.CENTER)
     add_footer(slide, "Sources: submission/model/metrics.json; submission/WRITEUP.md")
@@ -551,10 +551,10 @@ def experiment_card(slide, x, y, w, title, result, detail, accent, status="REJEC
 
 def slide_07(prs: Presentation):
     slide = blank_slide(prs)
-    add_header(slide, "What I tried—and deliberately did not ship", 7)
+    add_header(slide, "What I tried—and what I selected", 7)
     experiment_card(
         slide, 0.72, 1.93, 3.73,
-        "Bigger encoder", "25.60 vs 22.57",
+        "Bigger encoder", "25.60 vs E01 22.57",
         "Whisper-small worsened balanced MAE; no small-specific hyperparameter retuning was run.",
         BLUE,
     )
@@ -572,10 +572,10 @@ def slide_07(prs: Presentation):
     )
     add_rect(slide, 0.72, 5.64, 11.89, 0.92, fill=CARD_2, line=AQUA, line_width=1.3)
     add_pill(slide, "SELECTED", 0.98, 5.93, 0.94, fill=AQUA, text_color=NAVY, size=8)
-    add_text(slide, "Frozen Whisper-tiny + constrained CTC + inverse-√ weighted ordinal head", 2.20, 5.83, 8.56, 0.32, size=15, fill=WHITE, bold=True)
-    add_text(slide, "The simplest controlled candidate had the best overall trade-off.", 2.20, 6.22, 8.56, 0.21, size=9.5, fill=MUTED)
+    add_text(slide, "E16: Frozen Whisper-tiny + constrained CTC + alpha=0.54 ordinal head", 2.20, 5.83, 8.56, 0.32, size=14.5, fill=WHITE, bold=True)
+    add_text(slide, "Prompt-purged OOF and the one-shot final comparison passed every gate.", 2.20, 6.22, 8.56, 0.21, size=9.5, fill=MUTED)
     add_text(slide, "Each result comes from its documented protocol; this is not a single shared leaderboard.", 0.72, 6.75, 11.89, 0.20, size=8, fill=MUTED, italic=True, align=PP_ALIGN.CENTER)
-    add_footer(slide, "Sources: experiments/E02-whisper-small; E05-auxiliary-labels; E06-scorer-objectives")
+    add_footer(slide, "Sources: experiments/E02; E05; E06; E16-alpha054-confirmation")
     return slide
 
 
@@ -608,7 +608,7 @@ def slide_09(prs: Presentation):
     slide = blank_slide(prs)
     add_header(slide, "Sniff test: right direction, weak separation", 9)
     add_rect(slide, 0.72, 1.94, 5.76, 4.72, fill=NAVY_2, line=LINE)
-    add_text(slide, "CONTROLLED OWN-VOICE PAIR", 1.03, 2.19, 2.85, 0.22, size=9, fill=MUTED, bold=True)
+    add_text(slide, "LEGACY E01 OWN-VOICE PAIR", 1.03, 2.19, 2.85, 0.22, size=9, fill=MUTED, bold=True)
     add_text(slide, "+3.13", 4.90, 2.13, 1.18, 0.42, size=24, fill=AQUA, bold=True, align=PP_ALIGN.RIGHT)
     add_text(slide, "mean points", 4.93, 2.55, 1.15, 0.19, size=8, fill=MUTED, align=PP_ALIGN.RIGHT)
     bars = [("Best American", 70.05, AQUA), ("Non-native", 66.92, CORAL)]
@@ -623,13 +623,13 @@ def slide_09(prs: Presentation):
 
     add_rect(slide, 6.82, 1.94, 5.40, 4.72, fill=CARD, line=LINE)
     add_text(slide, "HEAVILY ACCENTED PHONES", 7.15, 2.19, 3.25, 0.22, size=9, fill=MUTED, bold=True)
-    metric_card(slide, "43.53%", "CORRECTLY SCORED BELOW 25", 7.15, 2.77, 2.15, accent=AQUA)
-    metric_card(slide, "11.94%", "INCORRECTLY SCORED ≥ 75", 9.61, 2.77, 2.15, accent=CORAL)
+    metric_card(slide, "46.77%", "E16 SCORED BELOW 25", 7.15, 2.77, 2.15, accent=AQUA)
+    metric_card(slide, "10.45%", "E16 INCORRECTLY ≥ 75", 9.61, 2.77, 2.15, accent=CORAL)
     add_text(slide, "Failure pattern", 7.15, 4.23, 2.15, 0.27, size=12, fill=WHITE, bold=True)
-    add_text(slide, "The model reacts when accent also hurts expected-phone recognition, but can miss subtler non-American realizations that Whisper still recognizes confidently.", 7.15, 4.64, 4.62, 1.05, size=12, fill=MUTED)
+    add_text(slide, "Historical E01 examples reacted when accent also hurt expected-phone recognition, but missed subtler non-American realizations that Whisper still recognized confidently.", 7.15, 4.64, 4.62, 1.05, size=12, fill=MUTED)
     add_rect(slide, 7.15, 5.83, 4.62, 0.47, fill=CARD_2, line=CORAL)
-    add_text(slide, "Conclusion: marginal utterance-level pass—not a phone-level pass.", 7.35, 5.95, 4.22, 0.21, size=9.5, fill=CORAL, bold=True, align=PP_ALIGN.CENTER)
-    add_footer(slide, "Sources: experiments/E07-sniff-tests/SNIFF_TEST.md; E07 and E08")
+    add_text(slide, "E16 raises label-0 recall, but still misses subtle errors.", 7.35, 5.95, 4.22, 0.21, size=9.5, fill=CORAL, bold=True, align=PP_ALIGN.CENTER)
+    add_footer(slide, "Sources: experiments/E07-sniff-tests/SNIFF_TEST.md; data/alpha054_confirmation/report.md")
     return slide
 
 
@@ -727,8 +727,8 @@ def slide_12(prs: Presentation):
         add_text(slide, title, x + 0.22, 4.22, 2.98, 0.34, size=18, fill=WHITE, bold=True)
         add_text(slide, body, x + 0.22, 4.78, 3.05, 0.49, size=10.5, fill=MUTED)
     add_rect(slide, 0.78, 5.88, 11.67, 0.69, fill=CARD_2, line=CORAL)
-    add_text(slide, "Ship today", 1.02, 6.07, 1.12, 0.25, size=10, fill=CORAL, bold=True)
-    add_text(slide, "A coaching prototype with visible uncertainty—not a high-stakes judgment of identity, ability, or proficiency.", 2.20, 6.01, 9.91, 0.34, size=12.5, fill=WHITE, bold=True)
+    add_text(slide, "Current scope", 1.02, 6.07, 1.12, 0.25, size=10, fill=CORAL, bold=True)
+    add_text(slide, "A local coaching prototype with visible uncertainty—not a high-stakes judgment of identity, ability, or proficiency.", 2.20, 6.01, 9.91, 0.34, size=12.5, fill=WHITE, bold=True)
     add_text(slide, "Questions  •  discussion  •  live demo", 0.78, 6.75, 11.67, 0.24, size=11, fill=AQUA, bold=True, align=PP_ALIGN.CENTER)
     add_footer(slide, "Sources: submission/WRITEUP.md; experiments/README.md")
     return slide

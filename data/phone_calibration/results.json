@@ -1,0 +1,372 @@
+{
+  "schema_version": "e19-phone-calibration-aggregate-evidence-v1",
+  "content_scope": "aggregate_only",
+  "source_schema_version": "phone-continuous-calibration-experiment-v1",
+  "experiment": {
+    "id": "E19",
+    "name": "nested phone-specific continuous calibration",
+    "run": "nested-s314159-seed13",
+    "status": "rejected_by_predeclared_gates",
+    "elapsed_seconds": 472.82659101486206,
+    "device": "mps",
+    "scorer_device": "cpu",
+    "production_promotion_allowed": false,
+    "command": "PYTORCH_ENABLE_MPS_FALLBACK=1 HF_HUB_OFFLINE=1 submission/.venv/bin/python experiments/E19-phone-calibration/run.py --data-dir data/dataset --speaker-map data/speaker_clusters/train_only_groups.json --output-dir runs/E19-phone-calibration/nested-s314159-seed13 --device mps"
+  },
+  "decision": {
+    "passed_all_gates": false,
+    "promotion_performed": false,
+    "interpretation": "reject phone-specific calibration and retain the promoted E16 alpha-0.54 checkpoint without this correction",
+    "failed_gates": [
+      "balanced_mae_point_strictly_improves",
+      "balanced_mae_ci_high_below_zero",
+      "qwk_delta_at_least_minus_0_01",
+      "macro_f1_delta_at_least_minus_0_01",
+      "label_0_recall_strictly_improves",
+      "label_1_recall_strictly_improves"
+    ],
+    "gates": {
+      "balanced_mae_point_strictly_improves": false,
+      "balanced_mae_ci_high_below_zero": false,
+      "mae_delta_at_most_0_5": true,
+      "qwk_delta_at_least_minus_0_01": false,
+      "macro_f1_delta_at_least_minus_0_01": false,
+      "label_0_recall_strictly_improves": false,
+      "label_1_recall_strictly_improves": false,
+      "label_2_recall_delta_at_least_minus_0_02": true,
+      "continuous_ece_delta_at_most_0_01": true,
+      "spearman_delta_at_least_minus_0_01": true,
+      "zero_alignment_fallbacks": true
+    }
+  },
+  "protocol": {
+    "model": "openai/whisper-tiny",
+    "model_revision": "169d4a4341b33bc18d8881c4b69c2e104e1cc0af",
+    "class_weight_alpha": 0.54,
+    "folds": 5,
+    "split_seed": 314159,
+    "scorer_seed": 13,
+    "ctc_epochs": 9,
+    "scorer_epochs": 18,
+    "outer_test_fold": "j",
+    "calibration_fold": "(j+1)%5",
+    "model_fit_folds": "the other three folds",
+    "fit_prompt_purge": "remove fit rows whose canonical prompt occurs in calibration or test",
+    "calibrator": {
+      "schema_version": "shrunk-phone-median-residual-v1",
+      "residual": "50*label - uncalibrated_score",
+      "center": "median",
+      "shrinkage_pseudo_count": 200.0,
+      "fallback": "calibration-fold global median residual",
+      "clip": [
+        0.0,
+        100.0
+      ]
+    },
+    "primary_metric": "balanced_mae",
+    "categorical_thresholds": [
+      25.0,
+      75.0
+    ],
+    "continuous_ece_bins": 10,
+    "bootstrap": {
+      "paired": true,
+      "grouping": "pseudo_speaker",
+      "groups": 89,
+      "samples": 10000,
+      "confidence": 0.95,
+      "seed": 42
+    },
+    "guard_tolerances": {
+      "mae_maximum_increase": 0.5,
+      "qwk_maximum_decrease": 0.01,
+      "macro_f1_maximum_decrease": 0.01,
+      "spearman_maximum_decrease": 0.01,
+      "label_2_recall_maximum_decrease": 0.02,
+      "continuous_ece_maximum_increase": 0.01
+    },
+    "model_selection_or_tuning": false,
+    "validation_manifest_used": false
+  },
+  "results": {
+    "uncalibrated": {
+      "balanced_mae": 29.047374713521624,
+      "mae": 24.320253361886955,
+      "qwk": 0.39340623138227493,
+      "macro_f1": 0.4143384902155803,
+      "balanced_accuracy": 0.5140695956373132,
+      "spearman": 0.44266434595795096,
+      "continuous_ece": 0.10545020366971299,
+      "class_mae": {
+        "0": 48.76997558425597,
+        "1": 17.079904335160688,
+        "2": 21.292244221148223
+      },
+      "class_recall": {
+        "0": 0.15644919385076866,
+        "1": 0.7373090909090909,
+        "2": 0.6484505021520803
+      }
+    },
+    "calibrated": {
+      "balanced_mae": 32.13264989538009,
+      "mae": 19.761566146027945,
+      "qwk": 0.37103505837785566,
+      "macro_f1": 0.38002442494044963,
+      "balanced_accuracy": 0.46744333526067167,
+      "spearman": 0.4386706505690361,
+      "continuous_ece": 0.04208411507284834,
+      "class_mae": {
+        "0": 60.56639903353895,
+        "1": 22.594876404268838,
+        "2": 13.236674248332484
+      },
+      "class_recall": {
+        "0": 0.03543307086614173,
+        "1": 0.5954909090909091,
+        "2": 0.7714060258249641
+      }
+    },
+    "calibrated_minus_uncalibrated": {
+      "balanced_mae": 3.085275181858467,
+      "mae": -4.55868721585901,
+      "qwk": -0.022371173004419265,
+      "macro_f1": -0.034314065275130645,
+      "balanced_accuracy": -0.04662626037664158,
+      "spearman": -0.003993695388914864,
+      "continuous_ece": -0.06336608859686466,
+      "class_mae": {
+        "0": 11.796423449282983,
+        "1": 5.5149720691081505,
+        "2": -8.05556997281574
+      },
+      "class_recall": {
+        "0": -0.12101612298462694,
+        "1": -0.14181818181818184,
+        "2": 0.12295552367288376
+      }
+    },
+    "paired_pseudo_speaker_bootstrap_balanced_mae_delta": {
+      "estimate": 3.085275181858467,
+      "bootstrap_mean": 3.0918297666317254,
+      "ci_low": 2.8104438191085626,
+      "ci_high": 3.449159091856894,
+      "n_valid": 10000
+    }
+  },
+  "data_boundary": {
+    "manifest_loaded": "train.jsonl",
+    "train_records": 2799,
+    "executed_records": 2799,
+    "executed_phones": 87243,
+    "pseudo_speaker_groups": 89,
+    "full_train_rows_executed": true,
+    "all_fit_calibration_test_speaker_sets_disjoint": true,
+    "all_fit_vs_held_prompt_overlaps_zero": true,
+    "every_executed_record_calibration_exactly_once": true,
+    "every_executed_record_test_exactly_once": true,
+    "inputs_unchanged_during_run": true,
+    "validation_manifest_loaded": false,
+    "validation_audio_loaded": false,
+    "alignment_fallbacks": 0,
+    "exact_e16_input_and_fold_binding_passed": true,
+    "folds": [
+      {
+        "test_fold": 0,
+        "calibration_fold": 1,
+        "fit_folds": [
+          2,
+          3,
+          4
+        ],
+        "fit_records_after_prompt_purge": 638,
+        "prompt_purged_records": 1071,
+        "calibration_records": 537,
+        "test_records": 553
+      },
+      {
+        "test_fold": 1,
+        "calibration_fold": 2,
+        "fit_folds": [
+          0,
+          3,
+          4
+        ],
+        "fit_records_after_prompt_purge": 602,
+        "prompt_purged_records": 1095,
+        "calibration_records": 565,
+        "test_records": 537
+      },
+      {
+        "test_fold": 2,
+        "calibration_fold": 3,
+        "fit_folds": [
+          0,
+          1,
+          4
+        ],
+        "fit_records_after_prompt_purge": 609,
+        "prompt_purged_records": 1044,
+        "calibration_records": 581,
+        "test_records": 565
+      },
+      {
+        "test_fold": 3,
+        "calibration_fold": 4,
+        "fit_folds": [
+          0,
+          1,
+          2
+        ],
+        "fit_records_after_prompt_purge": 595,
+        "prompt_purged_records": 1060,
+        "calibration_records": 563,
+        "test_records": 581
+      },
+      {
+        "test_fold": 4,
+        "calibration_fold": 0,
+        "fit_folds": [
+          1,
+          2,
+          3
+        ],
+        "fit_records_after_prompt_purge": 602,
+        "prompt_purged_records": 1081,
+        "calibration_records": 553,
+        "test_records": 563
+      }
+    ]
+  },
+  "provenance": {
+    "train_manifest_sha256": "f6650855bf62ebbec1e1a60cb8fb491d0e5fb0fb20667d402299fc1238a8148b",
+    "speaker_map_sha256": "f4d46c32c0a879828a95c43c113c9ffa4bf42cdba13dd337d59bbb73d192533a",
+    "fold_assignments_binding_sha256": "47bd029febbce5ce795928e4de04d255d29adceb57c19ced1784bd40d0023a5c",
+    "train_audio_content_sha256": "06eea8d7134a896d070d4c66cc294db5922b654297093b00e9d6bc88867c8e0b",
+    "pristine_encoder_state_sha256": "889966e826bd381c91224e5a747788ea657bff76556e491346d606eb950bc78d",
+    "all_whisper_revisions_and_encoder_hashes_matched": true,
+    "environment": {
+      "python": "3.11.15",
+      "platform": "macOS-26.5.1-arm64-arm-64bit",
+      "package_versions": {
+        "huggingface-hub": "1.25.1",
+        "numpy": "2.4.6",
+        "safetensors": "0.8.0",
+        "scikit-learn": "1.9.0",
+        "scipy": "1.17.1",
+        "soundfile": "0.14.0",
+        "torch": "2.12.1",
+        "transformers": "5.14.1"
+      }
+    },
+    "critical_source_manifest": {
+      "schema_version": "phone-continuous-calibration-sources-v1",
+      "capture_point": "run_entry_before_output_creation_or_data_loading",
+      "aggregate_sha256": "d2d71499cb31cf2380fa2bcf2cb716316e0a49d42d83a9accc70d707847f72f3",
+      "files": [
+        {
+          "path": "experiments/E19-phone-calibration/run.py",
+          "sha256": "d3c933e58a47f0fc30f3d0d1c7959498b5a6474988e9c4f86a807aa53aea99dc"
+        },
+        {
+          "path": "experiments/_support/bootstrap.py",
+          "sha256": "bb46ddc6581139fc604e392b1616eb94c7067bbc9eb3aa195c8735d64ca32203"
+        },
+        {
+          "path": "experiments/accent_experiments/phone_continuous_calibration.py",
+          "sha256": "3b8ad8892719367b21374394cc3996f42b832ca6766e82cb7b0f951969b75ca6"
+        },
+        {
+          "path": "experiments/accent_experiments/alpha054_confirmation.py",
+          "sha256": "5eae52f68f9ef9853c3b0238e5e69a1d07e155fc2cc8283afb5b979ab031ba21"
+        },
+        {
+          "path": "experiments/accent_experiments/auxiliary_training.py",
+          "sha256": "74097d86f1088a96fd307f9d96c00b2b64f13bb36c24b208e3157f94718ede88"
+        },
+        {
+          "path": "experiments/accent_experiments/calibration.py",
+          "sha256": "f782b5c76396609c04064cbc8d72e77dd7030812297f2439d52a1231e2e42115"
+        },
+        {
+          "path": "experiments/accent_experiments/data_quality.py",
+          "sha256": "977ec837e15b66a99fec3b6f19a4dcfe0e61eb7d28633039da1e15ff05b9edbc"
+        },
+        {
+          "path": "experiments/accent_experiments/objective_experiment.py",
+          "sha256": "f04e5e725e62f61e1044f9efe98c310ae7a7cc0df0005efe5d3e019f423f4941"
+        },
+        {
+          "path": "experiments/accent_experiments/objectives.py",
+          "sha256": "624700406c66790e23c56add30e2bb82e3c6f547348c2f3c11505f20dbf50ff5"
+        },
+        {
+          "path": "experiments/accent_experiments/speaker_analysis.py",
+          "sha256": "bb23341dced477f0930c4f4610b4d27c49919326afb7472dbc8661e8bdb9ad70"
+        },
+        {
+          "path": "experiments/accent_experiments/speaker_cluster.py",
+          "sha256": "27a418f87800e04ac6daef52937eb05093bccb3b6a0234a439b159f0028568fa"
+        },
+        {
+          "path": "experiments/accent_experiments/weight_power_experiment.py",
+          "sha256": "fe36df8aee4ba09ebd5430c9dcdef3580bc649dae4e6af4136fa802dcb4ae8e4"
+        },
+        {
+          "path": "submission/accent_score/alignment.py",
+          "sha256": "2bee43e15092ef0acf83f7605052990b65b7fb9f7e1dfcb4266745557f847d08"
+        },
+        {
+          "path": "submission/accent_score/audio.py",
+          "sha256": "56f19932a25f8cdf3a759d56824c9c89f36694993781b93726db3eb64db6aa5a"
+        },
+        {
+          "path": "submission/accent_score/data.py",
+          "sha256": "25731edc97b340c7f277813a3f9d519530da07744aab0cee4b786f765037aabc"
+        },
+        {
+          "path": "submission/accent_score/metrics.py",
+          "sha256": "0f48926bd3cc80873ac7f330c6aa76888584f57e6bf2f7a0c0f67715af4ef10d"
+        },
+        {
+          "path": "submission/accent_score/model.py",
+          "sha256": "3620fbd1591b17806a1f04eb58a1137e3d56f36298b5a7c1f45b619e60009625"
+        }
+      ]
+    }
+  },
+  "artifacts": {
+    "source_report_json": {
+      "path": "runs/E19-phone-calibration/nested-s314159-seed13/report.json",
+      "sha256": "9b09d92923c5d1f4f81beaae3c6cb5a07d4ca217fb34e3638149ca226ade06ff"
+    },
+    "source_report_markdown": {
+      "path": "runs/E19-phone-calibration/nested-s314159-seed13/report.md",
+      "sha256": "2896c0a06b548bb4cf9cbe1bdda353fbc558e5fa2920ff6b9d5e5c2e773455d6"
+    },
+    "calibrators": {
+      "path": "runs/E19-phone-calibration/nested-s314159-seed13/calibrators.json",
+      "sha256": "49849ec9a85ef06d2ed5be2d4063e80e23a7ff41e20603ded4669fef04c0edda"
+    },
+    "fold_assignments": {
+      "path": "runs/E19-phone-calibration/nested-s314159-seed13/fold_assignments.json",
+      "sha256": "38251d7f1fbc8a2bd9d64064472b98206000ac30d56861fdc07ba99e10e0edbf"
+    },
+    "oof_predictions": {
+      "path": "runs/E19-phone-calibration/nested-s314159-seed13/oof_predictions.npz",
+      "sha256": "18c50473d5197c32b63594cb19b7a7b0a8901236a0813ccf6dbbe708113ccf5a"
+    },
+    "partitions": {
+      "path": "runs/E19-phone-calibration/nested-s314159-seed13/partitions.json",
+      "sha256": "122f2abe41854f002a855791239fa6c1d8b68be12c24bd51ab2cb59ebe8728bf"
+    }
+  },
+  "limitations": [
+    "Pseudo-speakers are inferred from train-only clustering rather than supplied ground-truth identities.",
+    "Each outer rotation uses only three folds for model fitting after conservative prompt purging, leaving 595 to 638 fit records.",
+    "The phone correction is a fixed shrinkage-median rule; its pseudo-count of 200 was predeclared and not tuned.",
+    "This is a single scorer seed and a single fixed CTC seed, so it does not estimate training-seed variance.",
+    "The calibration improves overall MAE and ECE largely by favoring the dominant label 2, while materially harming balanced MAE and labels 0 and 1.",
+    "No validation manifest was read and no production artifact was changed."
+  ]
+}

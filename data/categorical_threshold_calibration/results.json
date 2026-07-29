@@ -1,0 +1,518 @@
+{
+  "continuous_score_invariance": {
+    "balanced_mae": 23.120979610603687,
+    "cross_fitted_threshold_evaluation": {
+      "balanced_mae": 23.120979610603687,
+      "mae": 17.988565765567575
+    },
+    "fixed_threshold_evaluation": {
+      "balanced_mae": 23.120979610603687,
+      "mae": 17.988565765567575
+    },
+    "mae": 17.988565765567575,
+    "maximum_absolute_score_delta": 0.0,
+    "mean_score_array_sha256": "9fade862acdc02894f7c609deeb0f405d094348cc32073314545e9704759c18e",
+    "same_score_array_used_for_both_categorical_evaluations": true,
+    "scores_modified": false
+  },
+  "cross_fitted_minus_fixed": {
+    "balanced_accuracy": 0.004014080129901676,
+    "macro_f1": 0.04982501003608175,
+    "per_class": {
+      "0": {
+        "f1": 0.09567138875722908,
+        "precision": -0.13101410756904175,
+        "recall": 0.2504686914135733
+      },
+      "1": {
+        "f1": 0.013394288190613113,
+        "precision": 0.06958925047378661,
+        "recall": -0.3277090909090909
+      },
+      "2": {
+        "f1": 0.040409353160403505,
+        "precision": -0.027154098352713207,
+        "recall": 0.08928263988522234
+      }
+    },
+    "qwk": 0.00810331472492809
+  },
+  "cross_fitted_thresholds": {
+    "folds": [
+      {
+        "calibration_folds": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "calibration_macro_f1": 0.5955683063316385,
+        "calibration_phones": 69971,
+        "held_fold": 0,
+        "held_metrics": {
+          "balanced_accuracy": 0.6207930020170448,
+          "confusion_matrix": [
+            [
+              1100,
+              401,
+              415
+            ],
+            [
+              357,
+              611,
+              489
+            ],
+            [
+              759,
+              1063,
+              12077
+            ]
+          ],
+          "macro_f1": 0.5923319135141822,
+          "per_class": {
+            "0": {
+              "f1": 0.5324298160696999,
+              "precision": 0.4963898916967509,
+              "predicted": 2216,
+              "recall": 0.5741127348643006,
+              "support": 1916
+            },
+            "1": {
+              "f1": 0.3459796149490374,
+              "precision": 0.2944578313253012,
+              "predicted": 2075,
+              "recall": 0.41935483870967744,
+              "support": 1457
+            },
+            "2": {
+              "f1": 0.8985863095238096,
+              "precision": 0.9303597565672906,
+              "predicted": 12981,
+              "recall": 0.8689114324771566,
+              "support": 13899
+            }
+          },
+          "phones": 17272,
+          "qwk": 0.5641646253989543
+        },
+        "held_phones": 17272,
+        "thresholds": {
+          "high": 61.0,
+          "low": 42.0
+        }
+      },
+      {
+        "calibration_folds": [
+          0,
+          2,
+          3,
+          4
+        ],
+        "calibration_macro_f1": 0.5929026531125737,
+        "calibration_phones": 70375,
+        "held_fold": 1,
+        "held_metrics": {
+          "balanced_accuracy": 0.6369075042101815,
+          "confusion_matrix": [
+            [
+              1562,
+              486,
+              398
+            ],
+            [
+              351,
+              586,
+              433
+            ],
+            [
+              924,
+              1107,
+              11021
+            ]
+          ],
+          "macro_f1": 0.6022144180785959,
+          "per_class": {
+            "0": {
+              "f1": 0.5913306833238691,
+              "precision": 0.550581600281988,
+              "predicted": 2837,
+              "recall": 0.6385936222403925,
+              "support": 2446
+            },
+            "1": {
+              "f1": 0.33023386869540716,
+              "precision": 0.26893070215695275,
+              "predicted": 2179,
+              "recall": 0.42773722627737226,
+              "support": 1370
+            },
+            "2": {
+              "f1": 0.8850787022165114,
+              "precision": 0.9298852514343571,
+              "predicted": 11852,
+              "recall": 0.8443916641127797,
+              "support": 13052
+            }
+          },
+          "phones": 16868,
+          "qwk": 0.5933768030139976
+        },
+        "held_phones": 16868,
+        "thresholds": {
+          "high": 60.5,
+          "low": 42.0
+        }
+      },
+      {
+        "calibration_folds": [
+          0,
+          1,
+          3,
+          4
+        ],
+        "calibration_macro_f1": 0.5951459899645081,
+        "calibration_phones": 70132,
+        "held_fold": 2,
+        "held_metrics": {
+          "balanced_accuracy": 0.638928788472256,
+          "confusion_matrix": [
+            [
+              1393,
+              439,
+              370
+            ],
+            [
+              402,
+              604,
+              354
+            ],
+            [
+              923,
+              1244,
+              11382
+            ]
+          ],
+          "macro_f1": 0.5949345754083647,
+          "per_class": {
+            "0": {
+              "f1": 0.566260162601626,
+              "precision": 0.5125091979396615,
+              "predicted": 2718,
+              "recall": 0.6326067211625794,
+              "support": 2202
+            },
+            "1": {
+              "f1": 0.33123114888949823,
+              "precision": 0.2641014429383472,
+              "predicted": 2287,
+              "recall": 0.4441176470588235,
+              "support": 1360
+            },
+            "2": {
+              "f1": 0.8873124147339699,
+              "precision": 0.9401949446555427,
+              "predicted": 12106,
+              "recall": 0.840061997195365,
+              "support": 13549
+            }
+          },
+          "phones": 17111,
+          "qwk": 0.5800565955065433
+        },
+        "held_phones": 17111,
+        "thresholds": {
+          "high": 61.0,
+          "low": 42.0
+        }
+      },
+      {
+        "calibration_folds": [
+          0,
+          1,
+          2,
+          4
+        ],
+        "calibration_macro_f1": 0.5957119647951238,
+        "calibration_phones": 68995,
+        "held_fold": 3,
+        "held_metrics": {
+          "balanced_accuracy": 0.6333329412049662,
+          "confusion_matrix": [
+            [
+              1272,
+              428,
+              406
+            ],
+            [
+              361,
+              581,
+              389
+            ],
+            [
+              851,
+              1230,
+              12730
+            ]
+          ],
+          "macro_f1": 0.5927474107781013,
+          "per_class": {
+            "0": {
+              "f1": 0.5542483660130719,
+              "precision": 0.5120772946859904,
+              "predicted": 2484,
+              "recall": 0.603988603988604,
+              "support": 2106
+            },
+            "1": {
+              "f1": 0.3254901960784314,
+              "precision": 0.2594908441268423,
+              "predicted": 2239,
+              "recall": 0.4365138993238167,
+              "support": 1331
+            },
+            "2": {
+              "f1": 0.8985036702428006,
+              "precision": 0.9412199630314233,
+              "predicted": 13525,
+              "recall": 0.8594963203024779,
+              "support": 14811
+            }
+          },
+          "phones": 18248,
+          "qwk": 0.5763352400893866
+        },
+        "held_phones": 18248,
+        "thresholds": {
+          "high": 61.0,
+          "low": 42.0
+        }
+      },
+      {
+        "calibration_folds": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "calibration_macro_f1": 0.596863837222199,
+        "calibration_phones": 69499,
+        "held_fold": 4,
+        "held_metrics": {
+          "balanced_accuracy": 0.6187950442615607,
+          "confusion_matrix": [
+            [
+              1199,
+              376,
+              423
+            ],
+            [
+              367,
+              533,
+              457
+            ],
+            [
+              862,
+              1102,
+              12425
+            ]
+          ],
+          "macro_f1": 0.5852043509636089,
+          "per_class": {
+            "0": {
+              "f1": 0.5417984636240397,
+              "precision": 0.49382207578253706,
+              "predicted": 2428,
+              "recall": 0.6001001001001001,
+              "support": 1998
+            },
+            "1": {
+              "f1": 0.3165083135391924,
+              "precision": 0.2650422675285927,
+              "predicted": 2011,
+              "recall": 0.39277818717759766,
+              "support": 1357
+            },
+            "2": {
+              "f1": 0.8973062757275945,
+              "precision": 0.9338594513340849,
+              "predicted": 13305,
+              "recall": 0.8635068455069845,
+              "support": 14389
+            }
+          },
+          "phones": 17744,
+          "qwk": 0.5603924218651901
+        },
+        "held_phones": 17744,
+        "thresholds": {
+          "high": 60.5,
+          "low": 43.5
+        }
+      }
+    ],
+    "metrics": {
+      "balanced_accuracy": 0.6304438139637137,
+      "confusion_matrix": [
+        [
+          6526,
+          2130,
+          2012
+        ],
+        [
+          1838,
+          2915,
+          2122
+        ],
+        [
+          4319,
+          5746,
+          59635
+        ]
+      ],
+      "macro_f1": 0.5941921413980041,
+      "per_class": {
+        "0": {
+          "f1": 0.5589482249154212,
+          "precision": 0.5145470314594339,
+          "predicted": 12683,
+          "recall": 0.6117360329958755,
+          "support": 10668
+        },
+        "1": {
+          "f1": 0.3300124533001245,
+          "precision": 0.2701325178389399,
+          "predicted": 10791,
+          "recall": 0.424,
+          "support": 6875
+        },
+        "2": {
+          "f1": 0.8936157459784669,
+          "precision": 0.9351722623845442,
+          "predicted": 63769,
+          "recall": 0.8555954088952654,
+          "support": 69700
+        }
+      },
+      "phones": 87243,
+      "qwk": 0.5762173503368004
+    }
+  },
+  "data": {
+    "folds": 5,
+    "label_counts": [
+      10668,
+      6875,
+      69700
+    ],
+    "phones": 87243,
+    "pseudo_speakers": 89,
+    "records": 2799,
+    "zero_pseudo_speaker_fold_overlap": true
+  },
+  "decision": {
+    "categorical_macro_f1_improved": true,
+    "continuous_model_improvement_claimed": false,
+    "production_changed": false,
+    "production_score_phonemes_changed": false,
+    "use": "secondary categorical reporting only"
+  },
+  "fixed_thresholds": {
+    "metrics": {
+      "balanced_accuracy": 0.6264297338338121,
+      "confusion_matrix": [
+        [
+          3854,
+          5741,
+          1073
+        ],
+        [
+          689,
+          5168,
+          1018
+        ],
+        [
+          1427,
+          14861,
+          53412
+        ]
+      ],
+      "macro_f1": 0.5443671313619224,
+      "per_class": {
+        "0": {
+          "f1": 0.4632768361581921,
+          "precision": 0.6455611390284757,
+          "predicted": 5970,
+          "recall": 0.3612673415823022,
+          "support": 10668
+        },
+        "1": {
+          "f1": 0.3166181651095114,
+          "precision": 0.20054326736515327,
+          "predicted": 25770,
+          "recall": 0.7517090909090909,
+          "support": 6875
+        },
+        "2": {
+          "f1": 0.8532063928180634,
+          "precision": 0.9623263607372574,
+          "predicted": 55503,
+          "recall": 0.7663127690100431,
+          "support": 69700
+        }
+      },
+      "phones": 87243,
+      "qwk": 0.5681140356118723
+    },
+    "thresholds": {
+      "high": 75.0,
+      "low": 25.0
+    }
+  },
+  "limitations": {
+    "base_oof_nesting_limitation": "Each held fold's score is OOF for its base model, but the other folds' OOF scores used to select its thresholds came from base models whose training data may include the current held fold. A strict estimate requires nested base-model fits.",
+    "secondary_metric_only": true,
+    "selection_limitation": "The same E14 artifact motivated and evaluates this secondary threshold question; no confirmatory confidence claim is made.",
+    "strictly_nested_base_models": false
+  },
+  "protocol": {
+    "base_alpha": 0.5,
+    "cross_fit": "select on the other four E14 folds and apply once to the held E14 fold",
+    "fixed_thresholds": {
+      "high": 75.0,
+      "low": 25.0
+    },
+    "objective": "macro_f1",
+    "score_aggregation": "mean_across_scorer_seeds",
+    "score_transformation": null,
+    "scorer_seeds": [
+      7,
+      42,
+      101
+    ],
+    "search_grid": {
+      "candidate_rule": "low in [5,55]; high in [max(45,low+1),95], both inclusive at step 0.5",
+      "high_max": 95.0,
+      "high_min": 45.0,
+      "low_max": 55.0,
+      "low_min": 5.0,
+      "minimum_gap": 1.0,
+      "step": 0.5
+    },
+    "tie_break": "highest macro-F1, then smallest Manhattan distance to (25,75), then lowest low threshold, then lowest high threshold",
+    "validation_manifest_used": false
+  },
+  "question": "Can cross-fitted global cut points improve categorical summaries of the existing E14 alpha=0.50 three-seed mean OOF scores?",
+  "schema_version": "e17-categorical-threshold-calibration-v1",
+  "source": {
+    "e14_report": {
+      "path": "runs/E14-weight-power/train-only-grouped-oof-s42-v1/report.json",
+      "sha256": "c05860381e95082d76f0c8fa5d14d56eaabba1e7a5ad4d604847af2cff880159"
+    },
+    "e14_schema_version": "weight-power-experiment-v2",
+    "oof_predictions": {
+      "path": "runs/E14-weight-power/train-only-grouped-oof-s42-v1/oof_predictions.npz",
+      "sha256": "915c70dc1f9efd8e79011a35d90de29765924f35060c7fb69b665c8e863d0102"
+    }
+  },
+  "status": "completed_secondary_categorical_experiment"
+}

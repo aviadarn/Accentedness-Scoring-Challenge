@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
+import json
 
 import numpy as np
 import pytest
@@ -25,7 +26,11 @@ from accent_experiments.weight_power_experiment import (
     DEFAULT_SCORER_SEEDS,
     WeightPowerConfig,
     _OOFAccumulator,
+    _capture_critical_source_manifest,
+    _fit_indices_for_fold,
+    _sha256_local_file,
     build_arg_parser,
+    main,
     prediction_report,
     run_weight_power_experiment,
     select_weight_power,
@@ -143,6 +148,64 @@ def test_defaults_and_quick_configuration_are_bounded(tmp_path: Path) -> None:
     assert tuple(arguments.scorer_seeds) == DEFAULT_SCORER_SEEDS
     assert arguments.output_dir.parts[:2] == ("runs", "E14-weight-power")
     assert arguments.speaker_map == Path("data/speaker_clusters/train_only_groups.json")
+    assert arguments.purge_held_prompts is False
+    assert build_arg_parser().parse_args(["--purge-held-prompts"]).purge_held_prompts is True
+
+
+def test_cli_prompt_purge_flag_flows_into_run_config(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: list[WeightPowerConfig] = []
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        weight_experiment,
+        "run_weight_power_experiment",
+        lambda config: captured.append(config) or {},
+    )
+
+    assert main(
+        [
+            "--output-dir",
+            "runs/E16-safe-weight/cli-flow",
+            "--purge-held-prompts",
+        ]
+    ) == 0
+    assert len(captured) == 1
+    assert captured[0].purge_held_prompts is True
+
+
+def test_prompt_purge_removes_repeated_held_prompts() -> None:
+    records = (
+        PhoneRecord(Path("a.wav"), "Hello   World", ("h",), (0,)),
+        PhoneRecord(Path("b.wav"), "hello world", ("h",), (1,)),
+        PhoneRecord(Path("c.wav"), "different prompt", ("h",), (2,)),
+    )
+
+    fit, report = _fit_indices_for_fold(
+        records, (0, 1, 2), (0,), purge_held_prompts=True
+    )
+
+    assert fit == (2,)
+    assert report["purged_records"] == 1
+    assert report["fit_held_prompt_overlap_count"] == 0
+    assert report["zero_prompt_overlap"] is True
+
+
+def test_disabled_prompt_purge_reports_overlap_without_removing_rows() -> None:
+    records = (
+        PhoneRecord(Path("a.wav"), "same", ("h",), (0,)),
+        PhoneRecord(Path("b.wav"), "same", ("h",), (1,)),
+        PhoneRecord(Path("c.wav"), "other", ("h",), (2,)),
+    )
+
+    fit, report = _fit_indices_for_fold(
+        records, (0, 1, 2), (0,), purge_held_prompts=False
+    )
+
+    assert fit == (1, 2)
+    assert report["purged_records"] == 0
+    assert report["fit_held_prompt_overlap_count"] == 1
+    assert report["zero_prompt_overlap"] is False
 
 
 def test_fixed_weighted_scorer_trains_and_predicts() -> None:
@@ -316,7 +379,7 @@ def test_quick_orchestration_uses_train_only_and_writes_complete_oof(
     records = tuple(
         PhoneRecord(
             audio_path=tmp_path / "audio" / f"utt_{index:04d}.wav",
-            text=f"prompt {index}",
+            text="repeated prompt" if index < 3 else f"prompt {index}",
             phonemes=phones,
             labels=(0, 1, 2),
         )
@@ -326,6 +389,7 @@ def test_quick_orchestration_uses_train_only_and_writes_complete_oof(
         f"audio/utt_{index:04d}.wav": index for index in range(len(records))
     }
     loaded_paths: list[Path] = []
+    ctc_fit_prompts: list[set[str]] = []
 
     def fake_manifest(path: Path, **_: object) -> tuple[PhoneRecord, ...]:
         loaded_paths.append(path)
@@ -376,9 +440,16 @@ def test_quick_orchestration_uses_train_only_and_writes_complete_oof(
         weight_experiment, "_load_pretrained", lambda *_args: (object(), object())
     )
     monkeypatch.setattr(weight_experiment, "WhisperAudioCollator", lambda _value: object())
-    monkeypatch.setattr(
-        weight_experiment, "train_ctc_fixed", lambda *_args, **_kwargs: [{"epoch": 1}]
-    )
+    def fake_train_ctc(
+        _model: object,
+        selected: tuple[PhoneRecord, ...],
+        *_: object,
+        **__: object,
+    ) -> list[dict[str, int]]:
+        ctc_fit_prompts.append({record.text for record in selected})
+        return [{"epoch": 1}]
+
+    monkeypatch.setattr(weight_experiment, "train_ctc_fixed", fake_train_ctc)
     monkeypatch.setattr(weight_experiment, "extract_phone_feature_cache", fake_cache)
     monkeypatch.setattr(
         weight_experiment, "_new_sequence_scorer", lambda *_args: object()
@@ -389,7 +460,15 @@ def test_quick_orchestration_uses_train_only_and_writes_complete_oof(
         lambda *_args, **_kwargs: [{"epoch": 1, "train_ordinal_loss": 0.0}],
     )
     monkeypatch.setattr(weight_experiment, "predict_detailed", fake_predict)
-    monkeypatch.setattr(weight_experiment, "sha256_file", lambda _path: "fixture-sha")
+    monkeypatch.setattr(
+        weight_experiment,
+        "sha256_file",
+        lambda path: (
+            _sha256_local_file(Path(path))
+            if Path(path).is_file()
+            else "fixture-sha"
+        ),
+    )
 
     output = tmp_path / "runs" / "E14-weight-power" / "quick"
     report = run_weight_power_experiment(
@@ -403,6 +482,7 @@ def test_quick_orchestration_uses_train_only_and_writes_complete_oof(
             quick=True,
             quick_records=6,
             bootstrap_samples=10,
+            purge_held_prompts=True,
         )
     )
 
@@ -419,11 +499,30 @@ def test_quick_orchestration_uses_train_only_and_writes_complete_oof(
         "train-only-pseudo-speakers-v1"
     )
     assert report["seed_scope"]["ctc_training_seed_variance_measured"] is False
+    assert report["data_boundary"]["held_prompt_purge_enabled"] is True
+    assert report["data_boundary"]["all_folds_zero_prompt_overlap"] is True
+    assert report["data_boundary"]["prompt_purge_folds_checked"] == 2
+    assert report["data_boundary"]["prompt_purge_record_occurrences_removed"] > 0
+    assert len(ctc_fit_prompts) == 2
+    assert all("repeated prompt" not in prompts for prompts in ctc_fit_prompts)
     assert report["decision"]["selected_power"] == 0.5
     with np.load(output / "oof_predictions.npz") as artifact:
         np.testing.assert_array_equal(artifact["labels"], [0, 1, 2] * 6)
         assert artifact["record_indices"].shape == (18,)
         assert len([name for name in artifact if name.startswith("scores_")]) == 2
     assert (output / "fold_assignments.json").is_file()
+    prompt_path = output / "prompt_purge.json"
+    assert prompt_path.is_file()
+    prompt_sidecar = json.loads(prompt_path.read_text(encoding="utf-8"))
+    assert prompt_sidecar["purge_enabled"] is True
+    assert prompt_sidecar["aggregate"]["all_folds_zero_prompt_overlap"] is True
+    assert report["artifacts"]["prompt_purge"]["sha256"] == _sha256_local_file(
+        prompt_path
+    )
+    manifest = report["provenance"]["critical_source_manifest"]
+    assert manifest["capture_point"] == (
+        "run_entry_before_output_creation_and_data_loading"
+    )
+    assert manifest == _capture_critical_source_manifest()
     assert (output / "report.json").is_file()
     assert (output / "report.md").is_file()

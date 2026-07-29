@@ -61,7 +61,8 @@ def test_seed_device_weights_and_quick_configuration(tmp_path: Path) -> None:
     assert first == second
 
     weights = inverse_sqrt_class_weights([0, 0, 0, 0, 1, 2])
-    assert weights.mean().item() == pytest.approx(1.0)
+    observed_mean = (4 * weights[0] + weights[1] + weights[2]) / 6
+    assert observed_mean.item() == pytest.approx(1.0)
     assert weights[0] < weights[1]
 
     config = TrainingConfig(tmp_path, tmp_path / "model", quick=True).effective()
@@ -82,8 +83,9 @@ def test_ctc_decoding_edit_distance_and_corpus_per() -> None:
         phone_error_rate([(1,)], [])
 
 
-def test_fixed_ctc_retraining_preserves_declared_scheduler_horizon(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("device_name", ["cpu", "cuda", "mps"])
+def test_fixed_ctc_frozen_recipe_is_backend_independent_with_full_horizon(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, device_name: str
 ) -> None:
     config = TrainingConfig(
         tmp_path,
@@ -92,6 +94,7 @@ def test_fixed_ctc_retraining_preserves_declared_scheduler_horizon(
         max_ctc_epochs=12,
     )
     recorded_steps: list[int] = []
+    recorded_top_layers: list[int] = []
 
     class _Optimizer:
         pass
@@ -112,7 +115,11 @@ def test_fixed_ctc_retraining_preserves_declared_scheduler_horizon(
         "DurationBatchSampler",
         lambda *_args, **_kwargs: [object(), object(), object()],
     )
-    monkeypatch.setattr(training_module, "_set_only_ctc_trainable", lambda *_args: None)
+    monkeypatch.setattr(
+        training_module,
+        "_set_only_ctc_trainable",
+        lambda _model, top_layers: recorded_top_layers.append(top_layers),
+    )
     monkeypatch.setattr(training_module, "_optimizer_scheduler", fake_optimizer_scheduler)
     monkeypatch.setattr(training_module, "_train_ctc_epoch", lambda *_args, **_kwargs: 0.0)
 
@@ -124,14 +131,16 @@ def test_fixed_ctc_retraining_preserves_declared_scheduler_horizon(
         model,
         [_record(0, (0,))],
         SimpleNamespace(),
-        torch.device("cpu"),
+        torch.device(device_name),
         config,
         epochs=9,
+        freeze_encoder=True,
     )
 
-    # Three batches per epoch; warmup and fine-tuning retain their original
-    # 2- and 10-epoch horizons even though training stops after epoch nine.
-    assert recorded_steps == [6, 30]
+    # Three batches per epoch and one frozen phase preserve the exact MPS
+    # confirmation trajectory: train 9 epochs on a 12-epoch LR horizon.
+    assert recorded_steps == [36]
+    assert recorded_top_layers == [0]
 
 
 def test_cached_scorer_training_and_prediction_preserve_manifest_order(

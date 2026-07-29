@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
+import hashlib
 import json
 import logging
 import math
@@ -31,7 +32,7 @@ import torch
 from torch import Tensor, nn
 
 from accent_score.audio import WhisperAudioCollator
-from accent_score.data import PhoneRecord, sha256_file
+from accent_score.data import PhoneRecord, canonicalize_prompt, sha256_file
 from accent_score.metrics import (
     DEFAULT_BOOTSTRAP_METRICS,
     compute_metrics,
@@ -65,7 +66,24 @@ from .objectives import ordinal_bce_objective, power_law_class_weights
 
 
 LOGGER = logging.getLogger(__name__)
-SCHEMA_VERSION = "weight-power-experiment-v2"
+SCHEMA_VERSION = "weight-power-experiment-v3"
+PROMPT_PURGE_SIDECAR_SCHEMA_VERSION = "weight-power-prompt-purge-v1"
+CRITICAL_SOURCE_MANIFEST_SCHEMA_VERSION = "weight-power-critical-sources-v1"
+CRITICAL_SOURCE_RELATIVE_PATHS = (
+    "experiments/accent_experiments/weight_power_experiment.py",
+    "experiments/accent_experiments/auxiliary_training.py",
+    "experiments/accent_experiments/calibration.py",
+    "experiments/accent_experiments/data_quality.py",
+    "experiments/accent_experiments/objective_experiment.py",
+    "experiments/accent_experiments/objectives.py",
+    "experiments/accent_experiments/speaker_analysis.py",
+    "experiments/accent_experiments/speaker_cluster.py",
+    "submission/accent_score/alignment.py",
+    "submission/accent_score/audio.py",
+    "submission/accent_score/data.py",
+    "submission/accent_score/metrics.py",
+    "submission/accent_score/model.py",
+)
 DEFAULT_POWERS = (0.5, 0.6, 0.7, 0.8, 0.9)
 DEFAULT_SCORER_SEEDS = (7, 42, 101)
 DEFAULT_CTC_EPOCHS = 9
@@ -100,6 +118,7 @@ class WeightPowerConfig:
     verify_snapshot: bool = True
     validate_audio: bool = True
     calibration_bins: int = 10
+    purge_held_prompts: bool = False
     quick: bool = False
     quick_records: int = 48
 
@@ -526,6 +545,7 @@ def select_weight_power(
 def run_weight_power_experiment(raw_config: WeightPowerConfig) -> dict[str, Any]:
     """Run grouped OOF weight-power comparison without loading ``val.jsonl``."""
 
+    critical_source_manifest = _capture_critical_source_manifest()
     config = raw_config.effective()
     output_dir = config.output_dir
     output_dir.mkdir(parents=True, exist_ok=False)
@@ -576,6 +596,7 @@ def run_weight_power_experiment(raw_config: WeightPowerConfig) -> dict[str, Any]
         for seed in config.scorer_seeds
     }
     fold_training: list[dict[str, Any]] = []
+    prompt_purge_folds: list[dict[str, Any]] = []
 
     for fold in range(config.n_splits):
         held_indices = tuple(
@@ -583,7 +604,26 @@ def run_weight_power_experiment(raw_config: WeightPowerConfig) -> dict[str, Any]
             for index in grouped.validation_indices(fold)
             if index in execution_set
         )
-        fit_indices = tuple(index for index in execution_indices if index not in held_indices)
+        fit_indices, prompt_purge = _fit_indices_for_fold(
+            records,
+            execution_indices,
+            held_indices,
+            purge_held_prompts=config.purge_held_prompts,
+        )
+        held_set = frozenset(held_indices)
+        candidate_fit_indices = tuple(
+            index for index in execution_indices if index not in held_set
+        )
+        prompt_purge_folds.append(
+            _prompt_purge_fold_artifact(
+                records,
+                fold=fold,
+                held_indices=held_indices,
+                candidate_fit_indices=candidate_fit_indices,
+                final_fit_indices=fit_indices,
+                enabled=config.purge_held_prompts,
+            )
+        )
         if not held_indices or not fit_indices:
             raise RuntimeError(f"execution subset leaves fold {fold} empty")
         fit_records = tuple(records[index] for index in fit_indices)
@@ -615,6 +655,7 @@ def run_weight_power_experiment(raw_config: WeightPowerConfig) -> dict[str, Any]
                 "held_records": len(held_records),
                 "fit_phones": sum(record.num_phones for record in fit_records),
                 "held_phones": sum(record.num_phones for record in held_records),
+                "prompt_purge": prompt_purge,
                 "alignment_fallbacks": {
                     "fit": fit_fallbacks,
                     "held": held_fallbacks,
@@ -727,6 +768,21 @@ def run_weight_power_experiment(raw_config: WeightPowerConfig) -> dict[str, Any]
             "executed_record_indices": execution_indices,
         },
     )
+    train_manifest_sha256 = sha256_file(train_manifest)
+    prompt_purge_sidecar = _prompt_purge_sidecar(
+        records,
+        execution_indices=execution_indices,
+        folds=prompt_purge_folds,
+        enabled=config.purge_held_prompts,
+        train_manifest_sha256=train_manifest_sha256,
+        critical_source_manifest_sha256=critical_source_manifest["aggregate_sha256"],
+    )
+    prompt_purge_path = output_dir / "prompt_purge.json"
+    _write_json(prompt_purge_path, prompt_purge_sidecar)
+    prompt_purge_sha256 = sha256_file(prompt_purge_path)
+    all_folds_zero_prompt_overlap = all(
+        bool(row["zero_prompt_overlap"]) for row in prompt_purge_folds
+    )
 
     report: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
@@ -741,6 +797,12 @@ def run_weight_power_experiment(raw_config: WeightPowerConfig) -> dict[str, Any]
             "executed_records": len(execution_indices),
             "executed_phones": int(labels.size),
             "quick_smoke": config.quick,
+            "held_prompt_purge_enabled": config.purge_held_prompts,
+            "all_folds_zero_prompt_overlap": all_folds_zero_prompt_overlap,
+            "prompt_purge_folds_checked": len(prompt_purge_folds),
+            "prompt_purge_record_occurrences_removed": sum(
+                len(row["purged_record_indices"]) for row in prompt_purge_folds
+            ),
         },
         "seed_scope": {
             "ctc_runs_per_fold": 1,
@@ -763,10 +825,16 @@ def run_weight_power_experiment(raw_config: WeightPowerConfig) -> dict[str, Any]
         "artifacts": {
             "oof_predictions": "oof_predictions.npz",
             "fold_assignments": "fold_assignments.json",
+            "prompt_purge": {
+                "path": prompt_purge_path.name,
+                "sha256": prompt_purge_sha256,
+                "schema_version": PROMPT_PURGE_SIDECAR_SCHEMA_VERSION,
+            },
         },
         "provenance": {
-            "train_manifest_sha256": sha256_file(train_manifest),
+            "train_manifest_sha256": train_manifest_sha256,
             "speaker_map_sha256": sha256_file(config.speaker_map_path),
+            "critical_source_manifest": critical_source_manifest,
             "pseudo_speaker_artifact": speaker_artifact.to_provenance_dict(),
             "device": str(device),
             "scorer_device": str(scorer_device),
@@ -856,6 +924,205 @@ def _require_all_training_labels(records: Sequence[PhoneRecord], *, fold: int) -
     missing = sorted({0, 1, 2} - labels)
     if missing:
         raise RuntimeError(f"fold {fold} fitting rows are missing labels: {missing}")
+
+
+def _capture_critical_source_manifest() -> dict[str, Any]:
+    """Hash every local source file that can change the E14 training protocol.
+
+    This function is deliberately called as the first operation of the run so
+    a long training job cannot accidentally claim the hash of source edited
+    after its Python process started.
+    """
+
+    repository_root = Path(__file__).resolve().parents[2]
+    files = [
+        {
+            "path": relative_path,
+            "sha256": _sha256_local_file(repository_root / relative_path),
+        }
+        for relative_path in CRITICAL_SOURCE_RELATIVE_PATHS
+    ]
+    manifest: dict[str, Any] = {
+        "schema_version": CRITICAL_SOURCE_MANIFEST_SCHEMA_VERSION,
+        "capture_point": "run_entry_before_output_creation_and_data_loading",
+        "files": files,
+    }
+    manifest["aggregate_sha256"] = _canonical_json_sha256(manifest)
+    return manifest
+
+
+def _prompt_key_sha256(record: PhoneRecord) -> str:
+    canonical = canonicalize_prompt(record.text)
+    if not canonical:
+        raise ValueError("canonical prompt must not be empty")
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _prompt_purge_fold_artifact(
+    records: Sequence[PhoneRecord],
+    *,
+    fold: int,
+    held_indices: Sequence[int],
+    candidate_fit_indices: Sequence[int],
+    final_fit_indices: Sequence[int],
+    enabled: bool,
+) -> dict[str, Any]:
+    """Return exact, text-free row provenance for one fold's prompt purge."""
+
+    held = tuple(int(index) for index in held_indices)
+    candidate = tuple(int(index) for index in candidate_fit_indices)
+    final = tuple(int(index) for index in final_fit_indices)
+    for name, values in (("held", held), ("candidate fit", candidate), ("final fit", final)):
+        if len(values) != len(set(values)):
+            raise RuntimeError(f"fold {fold} {name} indices contain duplicates")
+        if any(index < 0 or index >= len(records) for index in values):
+            raise RuntimeError(f"fold {fold} {name} index is outside the manifest")
+    held_set = frozenset(held)
+    candidate_set = frozenset(candidate)
+    final_set = frozenset(final)
+    if held_set & candidate_set:
+        raise RuntimeError(f"fold {fold} held and candidate-fit rows overlap")
+    if not final_set <= candidate_set:
+        raise RuntimeError(f"fold {fold} final-fit rows are not a candidate subset")
+
+    prompt_hashes = tuple(_prompt_key_sha256(record) for record in records)
+    held_prompt_hashes = frozenset(prompt_hashes[index] for index in held)
+    expected_final = tuple(
+        index
+        for index in candidate
+        if not enabled or prompt_hashes[index] not in held_prompt_hashes
+    )
+    if final != expected_final:
+        raise RuntimeError(f"fold {fold} final-fit rows disagree with prompt purge")
+    purged = tuple(index for index in candidate if index not in final_set)
+    final_prompt_hashes = frozenset(prompt_hashes[index] for index in final)
+    overlap = sorted(held_prompt_hashes & final_prompt_hashes)
+    if enabled and overlap:
+        raise RuntimeError(f"fold {fold} prompt purge left canonical prompt overlap")
+    return {
+        "fold": int(fold),
+        "enabled": bool(enabled),
+        "held_record_indices": list(held),
+        "candidate_fit_record_indices": list(candidate),
+        "final_fit_record_indices": list(final),
+        "purged_record_indices": list(purged),
+        "held_prompt_key_sha256": sorted(held_prompt_hashes),
+        "final_fit_prompt_key_sha256": sorted(final_prompt_hashes),
+        "purged_prompt_key_sha256": sorted(
+            {prompt_hashes[index] for index in purged}
+        ),
+        "fit_held_prompt_overlap_sha256": overlap,
+        "zero_prompt_overlap": not overlap,
+    }
+
+
+def _prompt_purge_sidecar(
+    records: Sequence[PhoneRecord],
+    *,
+    execution_indices: Sequence[int],
+    folds: Sequence[Mapping[str, Any]],
+    enabled: bool,
+    train_manifest_sha256: str,
+    critical_source_manifest_sha256: str,
+) -> dict[str, Any]:
+    """Build the exact row-level prompt-purge artifact for later validation."""
+
+    execution = tuple(int(index) for index in execution_indices)
+    prompt_rows = [
+        {
+            "record_index": index,
+            "canonical_prompt_sha256": _prompt_key_sha256(records[index]),
+        }
+        for index in execution
+    ]
+    return {
+        "schema_version": PROMPT_PURGE_SIDECAR_SCHEMA_VERSION,
+        "train_manifest_sha256": train_manifest_sha256,
+        "critical_source_manifest_sha256": critical_source_manifest_sha256,
+        "canonicalization": "NFKC+casefold+whitespace-collapse;sha256-utf8",
+        "purge_enabled": bool(enabled),
+        "execution_record_indices": list(execution),
+        "record_prompt_keys": prompt_rows,
+        "folds": [dict(row) for row in folds],
+        "aggregate": {
+            "folds": len(folds),
+            "all_folds_zero_prompt_overlap": all(
+                bool(row["zero_prompt_overlap"]) for row in folds
+            ),
+            "purged_record_occurrences": sum(
+                len(row["purged_record_indices"]) for row in folds
+            ),
+        },
+    }
+
+
+def _sha256_local_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _canonical_json_sha256(value: Mapping[str, Any]) -> str:
+    payload = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _fit_indices_for_fold(
+    records: Sequence[PhoneRecord],
+    execution_indices: Sequence[int],
+    held_indices: Sequence[int],
+    *,
+    purge_held_prompts: bool,
+) -> tuple[tuple[int, ...], dict[str, Any]]:
+    """Build a fold's fit rows and optionally remove every held-out prompt.
+
+    Pseudo-speaker grouping prevents voice overlap.  Prompt purging is an
+    independent safeguard against memorizing labels for a repeated sentence:
+    when enabled, no canonical prompt present in the held fold can remain in
+    that fold's fitting rows.
+    """
+
+    held = frozenset(int(index) for index in held_indices)
+    if not held:
+        raise ValueError("held_indices must not be empty")
+    held_prompts = {
+        canonicalize_prompt(records[index].text)
+        for index in held
+    }
+    candidates = tuple(
+        int(index) for index in execution_indices if int(index) not in held
+    )
+    if purge_held_prompts:
+        fit = tuple(
+            index
+            for index in candidates
+            if canonicalize_prompt(records[index].text) not in held_prompts
+        )
+    else:
+        fit = candidates
+    fit_prompts = {canonicalize_prompt(records[index].text) for index in fit}
+    overlap = sorted(fit_prompts & held_prompts)
+    purged = len(candidates) - len(fit)
+    report = {
+        "enabled": bool(purge_held_prompts),
+        "candidate_fit_records": len(candidates),
+        "fit_records_after_purge": len(fit),
+        "purged_records": purged,
+        "held_unique_prompts": len(held_prompts),
+        "fit_held_prompt_overlap_count": len(overlap),
+        "zero_prompt_overlap": not overlap,
+    }
+    if purge_held_prompts and overlap:
+        raise RuntimeError("held-prompt purge left prompt overlap in a fold")
+    return fit, report
 
 
 def _execution_fold_report(
@@ -1056,8 +1323,8 @@ def _render_markdown(report: Mapping[str, Any]) -> str:
             "## Leakage boundary",
             "",
             "Only `train.jsonl` was loaded. Every pseudo-speaker appears in one held-out "
-            "fold, and each fold's CTC and scorer were trained only on the other folds. "
-            "The supplied `val.jsonl` was not loaded.",
+            "fold, and each fold's CTC and scorer were trained only on allowed fitting "
+            "rows. The supplied `val.jsonl` was not loaded.",
             "",
             "## Interpretation",
             "",
@@ -1072,6 +1339,16 @@ def _render_markdown(report: Mapping[str, Any]) -> str:
             "",
         ]
     )
+    if report["data_boundary"].get("held_prompt_purge_enabled"):
+        lines.extend(
+            [
+                "Held-prompt purging was enabled: every fitting row whose canonical "
+                "sentence appeared in that fold's held speakers was removed before "
+                "either CTC or scorer training. Each fold reports zero remaining prompt "
+                "overlap.",
+                "",
+            ]
+        )
     if report["data_boundary"]["quick_smoke"]:
         lines.extend(
             [
@@ -1228,6 +1505,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--allow-download", action="store_true")
     parser.add_argument("--skip-audio-validation", action="store_true")
     parser.add_argument("--skip-snapshot-verification", action="store_true")
+    parser.add_argument(
+        "--purge-held-prompts",
+        action="store_true",
+        help=(
+            "remove every fitting row whose canonical prompt occurs in that "
+            "fold's held-out pseudo-speakers"
+        ),
+    )
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--quick-records", type=int, default=48)
     parser.add_argument("--log-level", default="INFO")
@@ -1259,6 +1544,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         local_files_only=not arguments.allow_download,
         verify_snapshot=not arguments.skip_snapshot_verification,
         validate_audio=not arguments.skip_audio_validation,
+        purge_held_prompts=arguments.purge_held_prompts,
         quick=arguments.quick,
         quick_records=arguments.quick_records,
     )

@@ -1,0 +1,49 @@
+{
+  "api_contract": {
+    "callable": "score_phonemes",
+    "parameters": [
+      "audio_path",
+      "phonemes"
+    ]
+  },
+  "deployed_checkpoint_files": {
+    "accent_model_config.json": "dd65079b4c922745032281c95499c38a9e6b4dcf1ffc5a19d45c7298683b3ae0",
+    "data_fingerprints.json": "52e4647e51497d7df9e2b7e031ae1de32923c6ecaa00894e4da4803fcc6ecb83",
+    "metrics.json": "a9fc79f9128542e6576a8553adc79f7fa102df2991caac8974bead8e2b761ab4",
+    "model.safetensors": "ead3144c82ab87ad9d6406511c6348a99c944a9f8ac1097756a6a61d78e80338",
+    "model_selection.json": "362d28c5b07407251eb6976d1f3efafc1eb617b77c3672e53ea050cdd3bbdb83",
+    "preprocessor_config.json": "ba2e601484abc80f4cded977f9a4fd4a53175b7d35c2f2511f0cfc3a32ad2499",
+    "training_config.json": "97de6f22d3208018ba5cfd37d313713ba8f5c3f0783d8961840efba0261ba8a3",
+    "training_history.json": "8e532d9521f75ccf2edabf81fa25aaa89c1ba83ac3a11db3dde4a1fd9c770ea9"
+  },
+  "evidence": {
+    "candidate_validation_predictions_sha256": "33a80035cd2db88019fa1f02b9e1d6d476326c773ce2ef736804387ab9f63d29",
+    "comparison_sha256": "83c069ee7fcd5d24a5ad48b4be507bcfe30d404a301de8e11579907128f42289",
+    "confirmation_inputs": {
+      "critical_source_manifest_sha256": "41b1a3b2349ba8a74ca6251ee31b25d008081268724d4b9b8d00d84dd94897e3",
+      "e14_report": "b611300ccc1c6acd9a209d5fba0e84d34a0718eb6d4974d0ac5cbeae880aba72",
+      "fold_assignments": "fd620710e1cf7fc9706d7dd664187000bff5ca3356aa5d0e82b38ced9d27ee25",
+      "oof_predictions": "c7008144225df1113d9a081fda5efb30938eface3229d165130920a3f25afe6f",
+      "prompt_purge": "6fd64c1ed9b0bbcbffa7aee075bd619d3247e704016cc3810d67d4fb7b7d3755",
+      "speaker_map": "f4d46c32c0a879828a95c43c113c9ffa4bf42cdba13dd337d59bbb73d192533a",
+      "train_manifest": "f6650855bf62ebbec1e1a60cb8fb491d0e5fb0fb20667d402299fc1238a8148b"
+    },
+    "confirmation_sha256": "eac032907954b7e530f396bb7e4749be470e75c4baba52bc8c058b23dc9995e9",
+    "final_validation_evidence_sha256": "06ad0397b6c883c9eac4d9f66ca47d82c9bc578a0df7e3b44c25e89f678d0291",
+    "validation_manifest_sha256": "3f324098b44857e0b70cd9ee1771513d54faf6d0905ca8521b5aeeef29ea23a4"
+  },
+  "local_absolute_paths_removed": true,
+  "production_promoted": true,
+  "schema_version": "e16-deployment-manifest-v1",
+  "source_candidate_files": {
+    "accent_model_config.json": "dd65079b4c922745032281c95499c38a9e6b4dcf1ffc5a19d45c7298683b3ae0",
+    "data_fingerprints.json": "52e4647e51497d7df9e2b7e031ae1de32923c6ecaa00894e4da4803fcc6ecb83",
+    "metrics.json": "4b189baab74a899315e1d7b683ec790f78f2ba8757aa093141cf135326b232df",
+    "model.safetensors": "ead3144c82ab87ad9d6406511c6348a99c944a9f8ac1097756a6a61d78e80338",
+    "model_selection.json": "b46031c22f8cc401c033db478a4d02e27a2d09af31406c2e680ffb61f2bbfb26",
+    "preprocessor_config.json": "ba2e601484abc80f4cded977f9a4fd4a53175b7d35c2f2511f0cfc3a32ad2499",
+    "training_config.json": "97de6f22d3208018ba5cfd37d313713ba8f5c3f0783d8961840efba0261ba8a3",
+    "training_history.json": "8e532d9521f75ccf2edabf81fa25aaa89c1ba83ac3a11db3dde4a1fd9c770ea9"
+  },
+  "status": "promoted"
+}

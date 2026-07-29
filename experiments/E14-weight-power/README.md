@@ -127,13 +127,15 @@ directory:
 - `report.json` and `report.md` contain fold, seed, aggregate, calibration, and
   selection results;
 - `fold_assignments.json` records the audited grouped split; and
+- `prompt_purge.json` records exact held, candidate-fit, final-fit, and purged
+  row indices plus hashed canonical prompt keys for every fold; and
 - `oof_predictions.npz` contains manifest-ordered phone predictions for every
   evaluated power and seed.
 
 The report embeds the validated pseudo-speaker artifact hash, its exact binding
-to the training manifest, and its declared train-only provenance, so a result
-cannot silently lose the grouping inputs. These checks validate artifact
-content and declarations; they are not an independent process attestation.
+to the training manifest, the prompt-purge sidecar hash, and a critical-source
+manifest captured before data loading. These checks validate artifact content
+and declarations; they are not an independent process attestation.
 
 ## Interpretation limit
 

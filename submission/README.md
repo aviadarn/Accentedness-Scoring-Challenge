@@ -25,7 +25,7 @@ submitted model.
 submission/
 ├── model/            # Selected self-contained checkpoint
 ├── inference.py      # Required scoring interface
-├── train.py          # Production training entry point
+├── train.py          # Original general training/selection entry point
 ├── demo_app.py       # Gradio application
 ├── accent_score/     # Production implementation
 ├── tests/            # Production tests
@@ -44,7 +44,22 @@ uv python install 3.11
 uv sync --python 3.11
 ```
 
-All remaining commands run from `submission/`.
+Demo, inference, and test commands below run from `submission/`. The exact E16
+reproduction command is explicitly shown from the repository root.
+
+## Selected checkpoint
+
+The checked-in model is the promoted E16 `alpha=0.54` fixed retrain. On the
+supplied validation set it reaches balanced MAE `21.8496`, MAE `18.0081`, QWK
+`0.5786`, macro-F1 `0.5682`, balanced accuracy `0.6642`, and Spearman `0.5583`.
+Its balanced MAE improved by `0.7248` over the E01 incumbent, with paired
+utterance-bootstrap 95% CI `[-1.3549, -0.0812]`.
+
+The checkpoint SHA-256 is
+`ead3144c82ab87ad9d6406511c6348a99c944a9f8ac1097756a6a61d78e80338`.
+[`model/deployment_manifest.json`](model/deployment_manifest.json) binds it to
+the accepted prompt-purged confirmation, one-shot final comparison, and all
+deployed files.
 
 ## Demo
 
@@ -70,28 +85,52 @@ outside 0.5–30 seconds, uploads over 15 MB, unsupported phones, and stale phon
 sequences after the text changes. Browser speech synthesis stays in the
 browser, while uploaded or recorded audio is processed by the Gradio server.
 
-The temporary public demo recorded earlier now returns 404 and is expired.
-There is no replacement public deployment; local launch is the reproducible
-path.
+Local launch is the reproducible path for the promoted checkpoint. This
+repository does not claim that an external Hugging Face Space or other public
+endpoint has already been updated and verified against this exact artifact.
+
+The repository also includes a
+[Google Colab notebook](../notebooks/phone_accentedness_colab.ipynb) for
+verified checkpoint inference, WAV upload, and the Gradio interface. Its full
+E18/E19 training cells are guarded and require the private challenge data;
+normal inference does not.
 
 ## Train
 
-Train with deterministic seed `42`. The command automatically selects MPS,
-CUDA, or CPU in that order and writes a fresh run outside the submission:
+The exact production recipe is fail-closed: it consumes the accepted E16
+confirmation, fixes seed `42`, `alpha=0.54`, 9 CTC epochs on a 12-epoch
+learning-rate horizon, 18 scorer epochs, a frozen Whisper encoder, and zero
+joint epochs. From the repository root, stage a fresh checkpoint with:
 
 ```bash
-PYTORCH_ENABLE_MPS_FALLBACK=1 uv run python train.py \
-  --data-dir ../data/dataset \
-  --output-dir ../runs/E01-production-model/seed-42-repro \
-  --device auto \
-  --allow-download \
-  --seed 42
+PYTORCH_ENABLE_MPS_FALLBACK=1 HF_HUB_OFFLINE=1 uv run --project submission python \
+  experiments/E16-alpha054-confirmation/retrain.py \
+  --data-dir data/dataset \
+  --confirmation runs/E16-alpha054-confirmation/confirmation.json \
+  --output-dir runs/E16-alpha054-confirmation/fixed-retrain-seed42-repro \
+  --device auto
 ```
 
-`--allow-download` lets Transformers fetch `openai/whisper-tiny` on the first
-run. Omit it after the model is cached for cache-only training. The checked-in
-`model/` directory already contains the selected self-contained inference
-artifact.
+Generate and validate the required confirmation first using the complete
+commands in the [E16 experiment record](../experiments/E16-alpha054-confirmation/README.md).
+The retrain refuses any unaccepted or provenance-inconsistent confirmation and
+writes only to a new directory below `runs/`. Validation is loaded only after
+the model is trained and saved, and it is reporting-only.
+
+The offline command requires the fingerprinted Whisper-tiny revision
+`169d4a4341b33bc18d8881c4b69c2e104e1cc0af` to be the cached default. Before
+the first training step, the retrain verifies that resolved revision and the
+pristine full-model and encoder hashes
+`d96bb5e2c031849f745e3ee120fe829aef5bbac94eac26da08800d54761c293f` and
+`889966e826bd381c91224e5a747788ea657bff76556e491346d606eb950bc78d`.
+It fails closed if any value differs. `HF_HUB_OFFLINE=1` prevents a network
+update during the check; the hash guard prevents a moved local default-cache
+reference from silently changing training.
+
+`train.py` remains the original general train/dev selection driver and is useful
+for baseline research, but its inverse-square-root objective does **not**
+reproduce the promoted E16 checkpoint. The checked-in `model/` directory is
+already self-contained for offline inference.
 
 ## Inference
 

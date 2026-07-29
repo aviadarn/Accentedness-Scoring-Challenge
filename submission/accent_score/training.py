@@ -9,7 +9,6 @@ loaded until the final all-training-data model has been fitted.
 from __future__ import annotations
 
 import argparse
-from collections import Counter
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 import copy
 from dataclasses import asdict, dataclass, field, replace
@@ -17,6 +16,7 @@ from importlib import metadata
 import json
 import logging
 import math
+from numbers import Integral
 import os
 from pathlib import Path
 import platform
@@ -213,20 +213,53 @@ def seed_everything(seed: int) -> None:
         torch.backends.cudnn.deterministic = True
 
 
-def inverse_sqrt_class_weights(labels: Iterable[int]) -> Tensor:
-    """Return mean-one inverse-square-root weights for labels 0, 1, and 2."""
+def power_law_class_weights(labels: Iterable[int], alpha: float) -> Tensor:
+    """Return observed-token-mean-one weights proportional to ``n_c^-alpha``.
 
-    counts = Counter(int(label) for label in labels)
-    invalid = set(counts) - {0, 1, 2}
-    if invalid:
-        raise ValueError(f"invalid labels: {sorted(invalid)}")
-    if not counts:
+    ``alpha=0`` is unweighted, ``alpha=0.5`` is inverse square root, and
+    ``alpha=1`` gives every represented class equal total weight. All three
+    classes must occur because silently inventing a weight for an absent class
+    would make a fixed retrain incomparable with its confirmation experiment.
+    """
+
+    if isinstance(alpha, bool) or not isinstance(alpha, (int, float)):
+        raise TypeError("alpha must be a real number")
+    checked_alpha = float(alpha)
+    if not math.isfinite(checked_alpha):
+        raise ValueError("alpha must be finite")
+    if not 0.0 <= checked_alpha <= 1.0:
+        raise ValueError("alpha must be in [0, 1]")
+
+    values = list(labels)
+    if not values:
         raise ValueError("cannot calculate weights from no labels")
-    values = torch.tensor(
-        [1.0 / math.sqrt(max(counts[label], 1)) for label in range(3)],
-        dtype=torch.float32,
-    )
-    return values / values.mean()
+    if any(
+        not isinstance(value, Integral) or isinstance(value, bool)
+        for value in values
+    ):
+        raise TypeError("labels must contain integers")
+    checked_labels = [int(value) for value in values]
+    invalid = sorted(set(checked_labels) - {0, 1, 2})
+    if invalid:
+        raise ValueError(f"invalid labels: {invalid}")
+    counts = torch.bincount(
+        torch.tensor(checked_labels, dtype=torch.long), minlength=3
+    ).to(torch.float32)
+    missing = torch.nonzero(counts == 0, as_tuple=False).flatten().tolist()
+    if missing:
+        raise ValueError(
+            "power-law weighting requires all three classes; "
+            f"missing labels: {missing}"
+        )
+    proportional = counts.pow(-checked_alpha)
+    normalization = counts.sum() / torch.dot(counts, proportional)
+    return proportional * normalization
+
+
+def inverse_sqrt_class_weights(labels: Iterable[int]) -> Tensor:
+    """Return the exact ``alpha=0.5`` power-law class weights."""
+
+    return power_law_class_weights(labels, alpha=0.5)
 
 
 def levenshtein_distance(left: Sequence[int], right: Sequence[int]) -> int:
@@ -559,19 +592,28 @@ def train_ctc_fixed(
     config: TrainingConfig,
     *,
     epochs: int,
+    freeze_encoder: bool = False,
 ) -> list[dict[str, float | int]]:
-    """Retrain CTC on all rows while preserving the selection LR schedule."""
+    """Retrain CTC on all rows while preserving the selection LR schedule.
+
+    ``freeze_encoder=True`` is an explicit, backend-independent recipe.  It is
+    used by fixed retrains that must reproduce an MPS confirmation even when
+    the final run happens on CPU or CUDA.  The default retains the historical
+    device-specific behavior used by the broader training pipeline.
+    """
 
     if epochs < 1:
         raise ValueError("fixed CTC retraining requires at least one epoch")
     if epochs > config.max_ctc_epochs:
         raise ValueError("fixed CTC epochs cannot exceed max_ctc_epochs")
+    if not isinstance(freeze_encoder, bool):
+        raise TypeError("freeze_encoder must be a boolean")
     durations = audio_durations(records)
     history: list[dict[str, float | int]] = []
     warmup = min(config.ctc_warmup_epochs, epochs)
     phases = (
         ((0, epochs, config.max_ctc_epochs),)
-        if device.type == "mps"
+        if freeze_encoder or device.type == "mps"
         else (
             (0, warmup, config.ctc_warmup_epochs),
             (
@@ -631,6 +673,8 @@ def train_ctc_fixed(
                 {
                     "epoch": epoch + 1,
                     "top_encoder_layers": top_layers,
+                    "encoder_frozen": top_layers == 0,
+                    "schedule_horizon_epochs": schedule_epochs,
                     "train_ctc_loss": loss,
                 }
             )
@@ -936,6 +980,10 @@ def train_scorer_fixed(
                 phone_mask=mask,
                 class_weights=weights,
             )
+            if not torch.isfinite(loss).item():
+                raise FloatingPointError(
+                    f"non-finite fixed ordinal loss at epoch {epoch + 1}"
+                )
             loss.backward()
             nn.utils.clip_grad_norm_(scorer.parameters(), config.gradient_clip)
             optimizer.step()
@@ -1752,6 +1800,7 @@ __all__ = [
     "levenshtein_distance",
     "main",
     "phone_error_rate",
+    "power_law_class_weights",
     "predict_cached_scorer",
     "resolve_device",
     "run_training",
