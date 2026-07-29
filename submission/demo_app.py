@@ -318,20 +318,49 @@ def _score_and_cache_ui(
     return summary, phone_html, rows, result
 
 
+_DIFFICULTY_TONES = {
+    "Beginner": "forgiving",
+    "Standard": "balanced",
+    "Advanced": "strict",
+}
+
+
+def difficulty_status_ui(difficulty: str) -> str:
+    """Explain the selected feedback thresholds even before the first score."""
+
+    try:
+        lower_cutoff, upper_cutoff = validate_difficulty(difficulty)
+        tone = _DIFFICULTY_TONES[difficulty]
+    except (DemoInputError, KeyError):
+        _raise_user_error("Choose a valid coaching difficulty.")
+        raise AssertionError("unreachable")
+    return (
+        f"**{difficulty} selected · {tone} feedback** — "
+        f"Needs practice **<{lower_cutoff:g}**, "
+        f"Developing **{lower_cutoff:g}–<{upper_cutoff:g}**, "
+        f"American-like **≥{upper_cutoff:g}**.  \n"
+        "Raw phone scores and the mean stay fixed. If no score crosses a new "
+        "cutoff, its color and band will stay the same."
+    )
+
+
 def _rerender_cached_ui(
     result: DemoScoreResult | None,
     difficulty: str,
 ) -> tuple[
+    str,
     str | dict[str, Any],
     str | dict[str, Any],
     list[list[str | float | int]] | dict[str, Any],
 ]:
     """Apply a coaching profile to cached scores without invoking the model."""
 
+    status = difficulty_status_ui(difficulty)
     if result is None:
-        return gr.skip(), gr.skip(), gr.skip()
+        return status, gr.skip(), gr.skip(), gr.skip()
     try:
-        return render_result(result, difficulty)
+        summary, phone_html, rows = render_result(result, difficulty)
+        return status, summary, phone_html, rows
     except DemoInputError as error:
         _raise_user_error(str(error))
     except DemoOutputError:
@@ -428,14 +457,22 @@ def build_demo(
 
         gr.Markdown("## 3. Score your pronunciation")
         difficulty = gr.Radio(
-            choices=list(DIFFICULTY_PROFILES),
+            choices=[
+                ("Beginner · forgiving", "Beginner"),
+                ("Standard · balanced", "Standard"),
+                ("Advanced · strict", "Advanced"),
+            ],
             value=DEFAULT_DIFFICULTY,
-            label="Coaching difficulty",
+            label="Coaching feedback strictness",
             info=(
-                "Changes how raw scores are grouped into feedback bands. "
-                "It does not change the model scores or displayed mean."
+                "Changes thresholds, colors, and band labels only—not raw "
+                "model scores or the mean."
             ),
             interactive=True,
+        )
+        difficulty_status = gr.Markdown(
+            value=difficulty_status_ui(DEFAULT_DIFFICULTY),
+            elem_id="difficulty-status",
         )
         score_button = gr.Button("Score pronunciation", variant="primary")
         cached_result = gr.State(value=None, time_to_live=3600)
@@ -494,7 +531,7 @@ def build_demo(
         score_event.then(
             fn=_rerender_cached_ui,
             inputs=[cached_result, difficulty],
-            outputs=[summary, phone_html, table],
+            outputs=[difficulty_status, summary, phone_html, table],
             api_name=False,
             queue=False,
             show_progress="hidden",
@@ -502,7 +539,7 @@ def build_demo(
         difficulty.change(
             fn=_rerender_cached_ui,
             inputs=[cached_result, difficulty],
-            outputs=[summary, phone_html, table],
+            outputs=[difficulty_status, summary, phone_html, table],
             api_name=False,
             queue=False,
             show_progress="hidden",
@@ -531,6 +568,7 @@ __all__ = [
     "SPEAK_SENTENCE_JS",
     "build_demo",
     "demo",
+    "difficulty_status_ui",
     "generate_phones_ui",
     "main",
     "practice_sentence_ui",

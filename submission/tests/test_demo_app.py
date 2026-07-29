@@ -413,27 +413,54 @@ def test_cached_difficulty_rerender_does_not_invoke_scorer_again() -> None:
             audio_loader=_loader(_audio()),
         )
     )
-    advanced_summary, _advanced_html, advanced_table = (
+    advanced_status, advanced_summary, _advanced_html, advanced_table = (
         app_module._rerender_cached_ui(cached, "Advanced")
     )
 
     assert scorer_calls == [("audio.wav", ["h"])]
     assert "Mean **70.0/100**" in beginner_summary
     assert "Mean **70.0/100**" in advanced_summary
+    assert "Advanced selected · strict feedback" in advanced_status
+    assert "Raw phone scores and the mean stay fixed" in advanced_status
     assert beginner_table == [[1, "h", 70.0, "American-like"]]
     assert advanced_table == [[1, "h", 70.0, "Developing"]]
 
 
-def test_cached_difficulty_change_before_scoring_skips_all_outputs() -> None:
+def test_cached_difficulty_change_before_scoring_updates_visible_status() -> None:
     app_module = _import_demo_app()
 
     outputs = app_module._rerender_cached_ui(None, "Advanced")
 
-    assert outputs == (
+    assert outputs[0].startswith("**Advanced selected · strict feedback**")
+    assert outputs[1:] == (
         app_module.gr.skip(),
         app_module.gr.skip(),
         app_module.gr.skip(),
     )
+
+
+@pytest.mark.parametrize(
+    ("difficulty", "tone", "cutoffs"),
+    [
+        ("Beginner", "forgiving", (15, 65)),
+        ("Standard", "balanced", (25, 75)),
+        ("Advanced", "strict", (35, 85)),
+    ],
+)
+def test_difficulty_status_explains_thresholds_and_fixed_scores(
+    difficulty: str,
+    tone: str,
+    cutoffs: tuple[int, int],
+) -> None:
+    app_module = _import_demo_app()
+
+    status = app_module.difficulty_status_ui(difficulty)
+
+    assert f"{difficulty} selected · {tone} feedback" in status
+    assert f"Needs practice **<{cutoffs[0]}**" in status
+    assert f"American-like **≥{cutoffs[1]}**" in status
+    assert "Raw phone scores and the mean stay fixed" in status
+    assert "color and band will stay the same" in status
 
 
 def test_invalid_difficulty_surfaces_a_safe_gradio_error() -> None:
@@ -529,7 +556,7 @@ def test_build_demo_has_exact_audio_and_queue_configuration() -> None:
         component
         for component in demo.blocks.values()
         if component.__class__.__name__ == "Radio"
-        and component.label == "Coaching difficulty"
+        and component.label == "Coaching feedback strictness"
     ]
     assert len(difficulty_fields) == 1
     difficulty = difficulty_fields[0]
@@ -539,7 +566,15 @@ def test_build_demo_has_exact_audio_and_queue_configuration() -> None:
         "Standard",
         "Advanced",
     ]
-    assert "does not change the model scores" in difficulty.info
+    assert "not raw model scores or the mean" in difficulty.info
+    status_fields = [
+        component
+        for component in demo.blocks.values()
+        if component.__class__.__name__ == "Markdown"
+        and component.elem_id == "difficulty-status"
+    ]
+    assert len(status_fields) == 1
+    assert "Standard selected · balanced feedback" in status_fields[0].value
     cached_states = [
         component
         for component in demo.blocks.values()
@@ -561,6 +596,11 @@ def test_build_demo_has_exact_audio_and_queue_configuration() -> None:
     assert all(
         [component.__class__.__name__ for component in function.inputs]
         == ["State", "Radio"]
+        for function in rerender_functions
+    )
+    assert all(
+        [component.__class__.__name__ for component in function.outputs]
+        == ["Markdown", "Markdown", "HTML", "Dataframe"]
         for function in rerender_functions
     )
     assert sum(function.trigger_after is not None for function in rerender_functions) == 1

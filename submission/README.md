@@ -77,14 +77,15 @@ uv run python demo_app.py
 
 The interface provides a sentence to read, browser-based sentence playback,
 microphone recording or file upload, an editable generated phone sequence, and
-ordered per-phone scores. It also provides Beginner (`15/65`), Standard
-(`25/75`), and Advanced (`35/85`) coaching thresholds for the Needs practice,
-Developing, and American-like bands. Standard is the default. Changing the
-difficulty rerenders the latest result without rerunning inference; raw phone
-scores and the mean never change. These global presets are illustrative and
-have not been calibrated to individual learners or phones. The generated
-phones are only a starting point; the phone editor is authoritative and must
-match the spoken audio.
+ordered per-phone scores. Its **Coaching feedback strictness** control provides
+Beginner (`15/65`), Standard (`25/75`), and Advanced (`35/85`) thresholds for
+the Needs practice, Developing, and American-like bands. Standard is the
+default. An always-visible status explains the selected cutoffs and warns when
+no phone crosses them. Changing strictness rerenders the latest result without
+rerunning inference; raw phone scores and the mean never change. These global
+presets are illustrative and have not been calibrated to individual learners
+or phones. The generated phones are only a starting point; the phone editor is
+authoritative and must match the spoken audio.
 
 The app rejects missing or unreadable audio, near-silent recordings, clips
 outside 0.5–30 seconds, uploads over 15 MB, unsupported phones, and stale phone

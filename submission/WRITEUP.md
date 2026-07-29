@@ -184,9 +184,11 @@ serves the exact E16 artifact on a scale-to-zero Modal CPU deployment; the first
 page load after an idle period can take several seconds. A reproducible local
 alternative is `uv run python demo_app.py` from `submission/`. The app supports
 a microphone or upload, generated editable phonemes, sentence playback,
-ordered per-phone scores, and Beginner/Standard/Advanced coaching difficulty.
-Select a profile before scoring or change it afterward to reclassify the cached
-result; the raw scores do not change. The
+ordered per-phone scores, and Beginner/Standard/Advanced coaching feedback
+strictness. The UI shows the selected cutoffs even before scoring and explains
+that phones outside the changed thresholds can retain the same band. Select a
+profile before scoring or change it afterward to reclassify the cached result;
+the raw scores do not change. The
 [Hugging Face project page](https://huggingface.co/spaces/Aviadara/phone-accentedness-scorer)
 and [model repository](https://huggingface.co/Aviadara/phone-accentedness-scorer)
 provide the public handoff, while `modal_app.py` defines the deployed runtime.
